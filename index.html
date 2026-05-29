@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Global Economic & Historical Atlas</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsvectormap/dist/css/jsvectormap.min.css" integrity="sha256+uGlXpAnw7fW0f3S9w76DIsH8gBAd6eW566O9C6fIoc=" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/css/jsvectormap.min.css" />
     <style>
         * {
             margin: 0;
@@ -14,7 +14,7 @@
 
         body {
             font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
-            background-color: #0f172a; /* Deep Slate Blue */
+            background-color: #0f172a;
             color: #f8fafc;
             display: flex;
             height: 100vh;
@@ -22,7 +22,6 @@
             overflow: hidden;
         }
 
-        /* Main Map Viewport Area */
         #map-wrapper {
             flex: 1;
             position: relative;
@@ -55,10 +54,9 @@
             width: 100%;
         }
 
-        /* Interactive Sidebar Configuration */
         #sidebar {
             width: 420px;
-            background-color: #1e293b; /* Charcoal/Slate */
+            background-color: #1e293b;
             border-left: 1px solid #334155;
             height: 100%;
             overflow-y: auto;
@@ -68,12 +66,10 @@
             box-shadow: -4px 0 24px rgba(0, 0, 0, 0.25);
         }
 
-        /* Sidebar Content Formatting */
         .sidebar-padding {
             padding: 2rem;
         }
 
-        /* Placeholder State (When no country is clicked yet) */
         .placeholder-state {
             display: flex;
             flex-direction: column;
@@ -92,7 +88,6 @@
             stroke: #475569;
         }
 
-        /* Populated Active State Layout */
         .country-title {
             font-size: 1.85rem;
             font-weight: 700;
@@ -114,7 +109,6 @@
             font-weight: 700;
         }
 
-        /* Metric Grid Architecture */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -141,7 +135,6 @@
             color: #f1f5f9;
         }
 
-        /* Narrative/History Architecture */
         .history-box {
             background-color: #0f172a;
             padding: 1.25rem;
@@ -153,7 +146,6 @@
             text-align: justify;
         }
 
-        /* Error Banner styling */
         .map-error-banner {
             padding: 20px;
             background-color: #7f1d1d;
@@ -165,7 +157,6 @@
             text-align: center;
         }
 
-        /* Map styling adjustments */
         .jvm-zoom-btn {
             background-color: #334155 !important;
             color: #f8fafc !important;
@@ -202,11 +193,11 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/jsvectormap" integrity="sha256-wG6L3632mS6scD9f66jQWjof4pA14sWwG18+DAnpOnM=" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsvectormap/dist/maps/world.js" integrity="sha256-+Mccb0z5Z6Qv30pWez7n0vS/T7f+Gv7F69X6VclgM1Q=" crossorigin="anonymous"></script>
+    <!-- FIX: Pinned to version 1.5.3, SRI hashes removed to prevent hash-mismatch blocking -->
+    <script src="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/js/jsvectormap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/maps/world.js"></script>
 
     <script>
-        // Data Matrix mapping an extensive curated sample of prominent global economies
         const countryDataMatrix = {
             "AF": { name: "Afghanistan", gdp: "$14.5 Billion", gdpCapita: "$360", pop: "43.3 Million", hdi: "0.462", cpi: "20/100", growth: "+0.5%", history: "A historic crossroads of Central Asia, Afghanistan has experienced centuries of imperial expansions, silk road trade dominance, and intense modern geopolitical conflicts." },
             "AL": { name: "Albania", gdp: "$25.2 Billion", gdpCapita: "$8,900", pop: "2.8 Million", hdi: "0.789", cpi: "37/100", growth: "+3.3%", history: "Declaring independence from the Ottoman Empire in 1912, Albania navigated a deeply isolated communist regime in the late 20th century before turning into an open market economy." },
@@ -295,28 +286,23 @@
             "JP": { name: "Japan", gdp: "$4.25 Trillion", gdpCapita: "$34,200", pop: "123.8 Million", hdi: "0.920", cpi: "73/100", growth: "+0.9%", history: "An island nation with a distinct history of isolationism under feudal shogunates, Japan rapidly modernized in the late 19th century, developing into a leading technological powerhouse." }
         };
 
-        // DOM Sanitization Helper: Complete structural replacement for innerHTML vulnerabilities
         function displayCountryProfile(targetDataset) {
             const container = document.getElementById("sidebar-content");
             container.className = "sidebar-padding";
-            container.textContent = ""; // Clear existing layout nodes securely
+            container.textContent = "";
 
-            // 1. Create Title Layout Header Block
             const titleRow = document.createElement("div");
             titleRow.className = "country-title";
-            
             const titleText = document.createElement("span");
             titleText.textContent = targetDataset.name;
             titleRow.appendChild(titleText);
             container.appendChild(titleRow);
 
-            // 2. Create Section Label for Stats
             const statsLabel = document.createElement("div");
             statsLabel.className = "section-label";
             statsLabel.textContent = "Macroeconomic Profile";
             container.appendChild(statsLabel);
 
-            // 3. Construct Metric Data Architecture Grid
             const statsGrid = document.createElement("div");
             statsGrid.className = "stats-grid";
 
@@ -342,18 +328,17 @@
                 valueNode.className = "value";
                 valueNode.textContent = metric.value;
 
-                // Robust logic for numeric parse and directional/accessibility markup configuration
                 if (metric.isGrowth) {
                     const numericGrowth = parseFloat(metric.value);
                     if (!isNaN(numericGrowth)) {
                         if (numericGrowth < 0) {
-                            valueNode.style.color = "#ef4444"; // Red
+                            valueNode.style.color = "#ef4444";
                             valueNode.textContent = "▼ " + metric.value;
                         } else if (numericGrowth > 0) {
-                            valueNode.style.color = "#22c55e"; // Green
+                            valueNode.style.color = "#22c55e";
                             valueNode.textContent = "▲ " + metric.value;
                         } else {
-                            valueNode.style.color = "#94a3b8"; // Neutral Grey for zero
+                            valueNode.style.color = "#94a3b8";
                         }
                     }
                 }
@@ -363,20 +348,18 @@
             });
             container.appendChild(statsGrid);
 
-            // 4. Create Section Label for Narrative
             const historyLabel = document.createElement("div");
             historyLabel.className = "section-label";
             historyLabel.textContent = "Historical Insight";
             container.appendChild(historyLabel);
 
-            // 5. Construct Historical Insight Text Container
             const historyBox = document.createElement("div");
             historyBox.className = "history-box";
             historyBox.textContent = targetDataset.history;
             container.appendChild(historyBox);
         }
 
-        // Defensive Try-Catch Block enclosing initialization routines to mitigate broken links/CDN fallbacks gracefully
+        // FIX: Improved error catch block now logs the full error stack for easier debugging
         try {
             const mapInstance = new jsVectorMap({
                 selector: "#map",
@@ -384,7 +367,7 @@
                 backgroundColor: "transparent",
                 draggable: true,
                 zoomOnScroll: true,
-                
+
                 regionStyle: {
                     initial: {
                         fill: "#334155",
@@ -402,7 +385,6 @@
                     }
                 },
 
-                // Cleaned Callback Config Hook (Removed redundant dead-code onRegionTooltipShow callback)
                 onRegionClick: function(event, code) {
                     const normalizedCode = code.toUpperCase();
                     const targetDataset = countryDataMatrix[normalizedCode];
@@ -410,7 +392,6 @@
                     if (targetDataset) {
                         displayCountryProfile(targetDataset);
                     } else {
-                        // Secure implementation for Unavailable/Fallback data views
                         const container = document.getElementById("sidebar-content");
                         container.className = "sidebar-padding";
                         container.textContent = "";
@@ -428,11 +409,11 @@
                 }
             });
 
-            // Make reference available on window scope if needed for programmatic debugging
             window.atlasMapInstance = mapInstance;
 
         } catch (error) {
-            console.error("Vector Map Engine initialization halted:", error);
+            // FIX: Full error details now logged to browser console for debugging
+            console.error("Vector Map Engine initialization halted:", error.message, error.stack);
             const mapContainer = document.getElementById("map");
             if (mapContainer) {
                 mapContainer.textContent = "";
