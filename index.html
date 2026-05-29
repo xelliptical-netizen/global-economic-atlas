@@ -3,376 +3,479 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Economic & Development Atlas</title>
-    
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsvectormap/dist/css/jsvectormap.min.css">
-    
+    <title>Global Economic & Historical Atlas</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsvectormap/dist/css/jsvectormap.min.css" />
     <style>
-        :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --accent-color: #38bdf8;
-            --text-color: #f8fafc;
-            --muted-text: #94a3b8;
-            --border-color: #334155;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            margin: 0;
-            padding: 0;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            background-color: #0f172a; /* Deep Slate Blue */
+            color: #f8fafc;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Main Map Viewport Area */
+        #map-wrapper {
+            flex: 1;
+            position: relative;
+            height: 100%;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
         }
 
         header {
-            margin-top: 2.5rem;
-            text-align: center;
+            margin-bottom: 10px;
+            z-index: 10;
         }
 
         header h1 {
-            margin: 0;
-            font-size: 2.4rem;
-            font-weight: 700;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #38bdf8;
             letter-spacing: -0.025em;
-            background: linear-gradient(to right, #f8fafc, #38bdf8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
         }
 
         header p {
-            color: var(--muted-text);
-            margin-top: 0.5rem;
-            font-size: 1.1rem;
-        }
-
-        #map-container {
-            width: 90vw;
-            max-width: 1200px;
-            height: 650px;
-            margin: 2rem 0;
-            background: var(--card-bg);
-            border-radius: 16px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
-            overflow: hidden;
-            position: relative;
-            border: 1px solid var(--border-color);
+            font-size: 0.875rem;
+            color: #94a3b8;
+            margin-top: 2px;
         }
 
         #map {
+            flex: 1;
             width: 100%;
             height: 100%;
         }
 
-        /* Tooltip Styling */
-        .jvm-tooltip {
-            background: rgba(15, 23, 42, 0.95) !important;
-            border: 1px solid #475569 !important;
-            border-radius: 12px !important;
-            padding: 16px !important;
-            font-family: inherit !important;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6) !important;
-            color: var(--text-color) !important;
-            backdrop-filter: blur(4px);
+        /* Interactive Sidebar Configuration */
+        #sidebar {
+            width: 420px;
+            background-color: #1e293b; /* Charcoal/Slate */
+            border-left: 1px solid #334155;
+            height: 100%;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: -4px 0 24px rgba(0, 0, 0, 0.25);
         }
 
-        .tooltip-title {
-            font-size: 1.2rem;
+        /* Sidebar Content Formatting */
+        .sidebar-padding {
+            padding: 2rem;
+        }
+
+        /* Placeholder State (When no country is clicked yet) */
+        .placeholder-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            color: #64748b;
+            padding: 2rem;
+        }
+
+        .placeholder-state svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 1rem;
+            stroke: #475569;
+        }
+
+        /* Populated Active State Layout */
+        .country-title {
+            font-size: 1.85rem;
             font-weight: 700;
-            color: var(--accent-color);
-            margin-bottom: 10px;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 6px;
+            color: #ffffff;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #334155;
+            padding-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
-        .tooltip-grid {
+        .section-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #38bdf8;
+            margin-bottom: 0.75rem;
+            font-weight: 700;
+        }
+
+        /* Metric Grid Architecture */
+        .stats-grid {
             display: grid;
-            grid-template-columns: auto auto;
-            gap: 8px 24px;
-            font-size: 0.95rem;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
         }
 
-        .tooltip-label {
-            color: var(--muted-text);
-            font-weight: 500;
+        .stat-card {
+            background-color: #0f172a;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #334155;
         }
 
-        .tooltip-value {
+        .stat-card .label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-card .value {
+            font-size: 1.1rem;
             font-weight: 600;
-            text-align: right;
+            color: #f1f5f9;
+        }
+
+        /* Narrative/History Architecture */
+        .history-box {
+            background-color: #0f172a;
+            padding: 1.25rem;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            line-height: 1.6;
+            font-size: 0.95rem;
+            color: #cbd5e1;
+            text-align: justify;
+        }
+
+        /* Map styling adjustments */
+        .jvm-zoom-btn {
+            background-color: #334155 !important;
+            color: #f8fafc !important;
+            border-radius: 4px !important;
+            border: none !important;
+        }
+        .jvm-tooltip {
+            background: #334155 !important;
+            font-family: inherit !important;
+            font-size: 0.85rem !important;
+            padding: 6px 12px !important;
+            border-radius: 4px !important;
+            border: none !important;
         }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>Global Economic &amp; Development Atlas</h1>
-        <p>Hover cursor over sovereign states to query current macro-economic metrics.</p>
-    </header>
-
-    <div id="map-container">
+    <div id="map-wrapper">
+        <header>
+            <h1>Global Economic & Historical Atlas</h1>
+            <p>Click on any sovereign UN member nation to examine its profile.</p>
+        </header>
         <div id="map"></div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/jsvectormap/dist/js/jsvectormap.min.js"></script>
+    <div id="sidebar">
+        <div id="sidebar-content" class="placeholder-state">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.042 9.152c.582.448 1.148.89 1.676 1.345m-1.676-1.345c-.58-.447-1.143-.883-1.67-1.332m1.67.031zM20.5 10.5a8 8 0 1 1-16 0 8 8 0 0 1 16 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
+            </svg>
+            <p>Select a country on the map to display its core macro indicators and historical overview.</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jsvectormap"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsvectormap/dist/maps/world.js"></script>
 
     <script>
-        // Core Macro Database: Fully mapping all 193 UN Member States
-        const countryMetrics = {
-            AF: { name: "Afghanistan", gdp: "$14.5B", gdpCapita: "$360", pop: "43.3M", hdi: "0.462", cpi: "20/100", growth: "+0.5%" },
-            AL: { name: "Albania", gdp: "$25.2B", gdpCapita: "$8,900", pop: "2.8M", hdi: "0.789", cpi: "37/100", growth: "+3.3%" },
-            DZ: { name: "Algeria", gdp: "$260B", gdpCapita: "$5,700", pop: "46.8M", hdi: "0.745", cpi: "36/100", growth: "+3.8%" },
-            AD: { name: "Andorra", gdp: "$3.9B", gdpCapita: "$47,000", pop: "84K", hdi: "0.884", cpi: "46/100", growth: "+1.5%" },
-            AO: { name: "Angola", gdp: "$92.4B", gdpCapita: "$2,500", pop: "37.8M", hdi: "0.591", cpi: "33/100", growth: "+2.8%" },
-            AG: { name: "Antigua and Barbuda", gdp: "$1.9B", gdpCapita: "$19,200", pop: "94K", hdi: "0.826", cpi: "41/100", growth: "+5.4%" },
-            AR: { name: "Argentina", gdp: "$630B", gdpCapita: "$13,600", pop: "46.2M", hdi: "0.849", cpi: "37/100", growth: "-1.5%" },
-            AM: { name: "Armenia", gdp: "$25.4B", gdpCapita: "$8,600", pop: "2.9M", hdi: "0.786", cpi: "47/100", growth: "+7.0%" },
-            AU: { name: "Australia", gdp: "$1.79T", gdpCapita: "$66,100", pop: "26.7M", hdi: "0.946", cpi: "75/100", growth: "+2.0%" },
-            AT: { name: "Austria", gdp: "$540B", gdpCapita: "$59,200", pop: "9.1M", hdi: "0.926", cpi: "71/100", growth: "+0.8%" },
-            AZ: { name: "Azerbaijan", gdp: "$79.5B", gdpCapita: "$7,800", pop: "10.2M", hdi: "0.760", cpi: "23/100", growth: "+2.4%" },
-            BS: { name: "Bahamas", gdp: "$14.1B", gdpCapita: "$34,500", pop: "412K", hdi: "0.820", cpi: "64/100", growth: "+1.8%" },
-            BH: { name: "Bahrain", gdp: "$46.8B", gdpCapita: "$29,100", pop: "1.6M", hdi: "0.888", cpi: "42/100", growth: "+3.0%" },
-            BD: { name: "Bangladesh", gdp: "$455B", gdpCapita: "$2,650", pop: "174.4M", hdi: "0.661", cpi: "24/100", growth: "+5.6%" },
-            BB: { name: "Barbados", gdp: "$6.4B", gdpCapita: "$22,300", pop: "282K", hdi: "0.809", cpi: "65/100", growth: "+3.7%" },
-            BY: { name: "Belarus", gdp: "$74.2B", gdpCapita: "$7,900", pop: "9.2M", hdi: "0.801", cpi: "37/100", growth: "+1.0%" },
-            BE: { name: "Belgium", gdp: "$655B", gdpCapita: "$55,400", pop: "11.8M", hdi: "0.942", cpi: "73/100", growth: "+1.1%" },
-            BZ: { name: "Belize", gdp: "$3.2B", gdpCapita: "$7,600", pop: "415K", hdi: "0.700", cpi: "32/100", growth: "+3.0%" },
-            BJ: { name: "Benin", gdp: "$20.4B", gdpCapita: "$1,450", pop: "14.1M", hdi: "0.504", cpi: "43/100", growth: "+6.2%" },
-            BT: { name: "Bhutan", gdp: "$2.9B", gdpCapita: "$3,700", pop: "790K", hdi: "0.681", cpi: "68/100", growth: "+4.5%" },
-            BO: { name: "Bolivia", gdp: "$46.5B", gdpCapita: "$3,800", pop: "12.5M", hdi: "0.698", cpi: "29/100", growth: "+2.0%" },
-            BA: { name: "Bosnia and Herzegovina", gdp: "$28.5B", gdpCapita: "$8,800", pop: "3.2M", hdi: "0.779", cpi: "35/100", growth: "+2.5%" },
-            BW: { name: "Botswana", gdp: "$21.4B", gdpCapita: "$8,200", pop: "2.6M", hdi: "0.708", cpi: "59/100", growth: "+3.2%" },
-            BR: { name: "Brazil", gdp: "$2.28T", gdpCapita: "$10,600", pop: "217.6M", hdi: "0.760", cpi: "36/100", growth: "+2.3%" },
-            BN: { name: "Brunei", gdp: "$15.8B", gdpCapita: "$35,200", pop: "455K", hdi: "0.823", cpi: "60/100", growth: "+2.1%" },
-            BG: { name: "Bulgaria", gdp: "$107B", gdpCapita: "$16,500", pop: "6.4M", hdi: "0.817", cpi: "45/100", growth: "+2.0%" },
-            BF: { name: "Burkina Faso", gdp: "$21.5B", gdpCapita: "$920", pop: "23.5M", hdi: "0.438", cpi: "41/100", growth: "+4.8%" },
-            BI: { name: "Burundi", gdp: "$3.9B", gdpCapita: "$290", pop: "13.6M", hdi: "0.420", cpi: "20/100", growth: "+4.0%" },
-            CV: { name: "Cabo Verde", gdp: "$2.7B", gdpCapita: "$4,600", pop: "590K", hdi: "0.661", cpi: "64/100", growth: "+4.5%" },
-            KH: { name: "Cambodia", gdp: "$34.3B", gdpCapita: "$2,050", pop: "17.1M", hdi: "0.600", cpi: "22/100", growth: "+6.1%" },
-            CM: { name: "Cameroon", gdp: "$49.5B", gdpCapita: "$1,720", pop: "29.1M", hdi: "0.587", cpi: "27/100", growth: "+4.2%" },
-            CA: { name: "Canada", gdp: "$2.24T", gdpCapita: "$55,100", pop: "40.8M", hdi: "0.935", cpi: "76/100", growth: "+1.6%" },
-            CF: { name: "Central African Republic", gdp: "$2.7B", gdpCapita: "$510", pop: "5.8M", hdi: "0.387", cpi: "24/100", growth: "+1.5%" },
-            TD: { name: "Chad", gdp: "$13.2B", gdpCapita: "$720", pop: "18.6M", hdi: "0.394", cpi: "19/100", growth: "+3.0%" },
-            CL: { name: "Chile", gdp: "$345B", gdpCapita: "$17,400", pop: "19.6M", hdi: "0.860", cpi: "66/100", growth: "+2.0%" },
-            CN: { name: "China", gdp: "$19.4T", gdpCapita: "$13,750", pop: "1.41B", hdi: "0.788", cpi: "42/100", growth: "+4.5%" },
-            CO: { name: "Colombia", gdp: "$385B", gdpCapita: "$7,400", pop: "52.3M", hdi: "0.758", cpi: "40/100", growth: "+2.5%" },
-            KM: { name: "Comoros", gdp: "$1.4B", gdpCapita: "$1,600", pop: "860K", hdi: "0.586", cpi: "20/100", growth: "+3.5%" },
-            CG: { name: "Congo (Brazzaville)", gdp: "$15.2B", gdpCapita: "$2,500", pop: "6.2M", hdi: "0.593", cpi: "22/100", growth: "+4.0%" },
-            CD: { name: "Congo (Kinshasa)", gdp: "$67.5B", gdpCapita: "$660", pop: "105M", hdi: "0.481", cpi: "20/100", growth: "+6.5%" },
-            CR: { name: "Costa Rica", gdp: "$88.2B", gdpCapita: "$16,800", pop: "5.2M", hdi: "0.806", cpi: "55/100", growth: "+3.8%" },
-            CI: { name: "Côte d'Ivoire", gdp: "$81.4B", gdpCapita: "$2,750", pop: "29.7M", hdi: "0.534", cpi: "40/100", growth: "+6.6%" },
-            HR: { name: "Croatia", gdp: "$82.4B", gdpCapita: "$21,500", pop: "3.8M", hdi: "0.867", cpi: "50/100", growth: "+2.8%" },
-            CU: { name: "Cuba", gdp: "$107B", gdpCapita: "$9,500", pop: "11.1M", hdi: "0.764", cpi: "42/100", growth: "+0.5%" },
-            CY: { name: "Cyprus", gdp: "$32.4B", gdpCapita: "$34,800", pop: "930K", hdi: "0.907", cpi: "53/100", growth: "+2.9%" },
-            CZ: { name: "Czechia", gdp: "$335B", gdpCapita: "$31,100", pop: "10.8M", hdi: "0.895", cpi: "57/100", growth: "+1.4%" },
-            DK: { name: "Denmark", gdp: "$422B", gdpCapita: "$71,200", pop: "5.9M", hdi: "0.952", cpi: "90/100", growth: "+1.3%" },
-            DJ: { name: "Djibouti", gdp: "$4.1B", gdpCapita: "$3,900", pop: "1.1M", hdi: "0.515", cpi: "30/100", growth: "+5.1%" },
-            DM: { name: "Dominica", gdp: "$680M", gdpCapita: "$9,300", pop: "73K", hdi: "0.740", cpi: "53/100", growth: "+4.6%" },
-            DO: { name: "Dominican Republic", gdp: "$122B", gdpCapita: "$11,100", pop: "11.4M", hdi: "0.766", cpi: "35/100", growth: "+5.0%" },
-            EC: { name: "Ecuador", gdp: "$121B", gdpCapita: "$6,700", pop: "18.2M", hdi: "0.765", cpi: "34/100", growth: "+1.8%" },
-            EG: { name: "Egypt", gdp: "$395B", gdpCapita: "$3,500", pop: "114.5M", hdi: "0.731", cpi: "35/100", growth: "+4.0%" },
-            SV: { name: "El Salvador", gdp: "$35.2B", gdpCapita: "$5,500", pop: "6.4M", hdi: "0.674", cpi: "31/100", growth: "+2.3%" },
-            GQ: { name: "Equatorial Guinea", gdp: "$12.1B", gdpCapita: "$7,500", pop: "1.7M", hdi: "0.596", cpi: "17/100", growth: "-1.2%" },
-            ER: { name: "Eritrea", gdp: "$2.6B", gdpCapita: "$700", pop: "3.8M", hdi: "0.493", cpi: "22/100", growth: "+2.9%" },
-            EE: { name: "Estonia", gdp: "$41.8B", gdpCapita: "$31,200", pop: "1.3M", hdi: "0.899", cpi: "76/100", growth: "+1.8%" },
-            SZ: { name: "Eswatini", gdp: "$4.9B", gdpCapita: "$4,100", pop: "1.2M", hdi: "0.610", cpi: "30/100", growth: "+3.0%" },
-            ET: { name: "Ethiopia", gdp: "$165B", gdpCapita: "$1,300", pop: "129.7M", hdi: "0.492", cpi: "37/100", growth: "+6.2%" },
-            FJ: { name: "Fiji", gdp: "$5.5B", gdpCapita: "$5,900", pop: "940K", hdi: "0.729", cpi: "52/100", growth: "+3.0%" },
-            FI: { name: "Finland", gdp: "$305B", gdpCapita: "$54,800", pop: "5.6M", hdi: "0.942", cpi: "87/100", growth: "+1.0%" },
-            FR: { name: "France", gdp: "$3.05T", gdpCapita: "$46,200", pop: "66.5M", hdi: "0.910", cpi: "71/100", growth: "+1.1%" },
-            GA: { name: "Gabon", gdp: "$21.4B", gdpCapita: "$8,800", pop: "2.5M", hdi: "0.706", cpi: "28/100", growth: "+2.8%" },
-            GM: { name: "Gambia", gdp: "$2.4B", gdpCapita: "$900", pop: "2.8M", hdi: "0.495", cpi: "37/100", growth: "+5.3%" },
-            GE: { name: "Georgia", gdp: "$32.5B", gdpCapita: "$8,700", pop: "3.7M", hdi: "0.809", cpi: "53/100", growth: "+5.0%" },
-            DE: { name: "Germany", gdp: "$4.72T", gdpCapita: "$55,900", pop: "84.6M", hdi: "0.950", cpi: "78/100", growth: "+1.2%" },
-            GH: { name: "Ghana", gdp: "$76.5B", gdpCapita: "$2,250", pop: "34.4M", hdi: "0.602", cpi: "43/100", growth: "+4.3%" },
-            GR: { name: "Greece", gdp: "$242B", gdpCapita: "$23,200", pop: "10.4M", hdi: "0.893", cpi: "49/100", growth: "+2.1%" },
-            GD: { name: "Grenada", gdp: "$1.3B", gdpCapita: "$11,200", pop: "118K", hdi: "0.793", cpi: "53/100", growth: "+3.8%" },
-            GT: { name: "Guatemala", gdp: "$106B", gdpCapita: "$5,800", pop: "18.3M", hdi: "0.630", cpi: "23/100", growth: "+3.5%" },
-            GN: { name: "Guinea", gdp: "$24.2B", gdpCapita: "$1,650", pop: "14.7M", hdi: "0.471", cpi: "26/100", growth: "+5.2%" },
-            GW: { name: "Guinea-Bissau", gdp: "$2.1B", gdpCapita: "$1,000", pop: "2.2M", hdi: "0.483", cpi: "22/100", growth: "+4.5%" },
-            GY: { name: "Guyana", gdp: "$22.1B", gdpCapita: "$27,000", pop: "815K", hdi: "0.742", cpi: "40/100", growth: "+22.0%" },
-            HT: { name: "Haiti", gdp: "$25.4B", gdpCapita: "$2,100", pop: "11.9M", hdi: "0.552", cpi: "17/100", growth: "-1.0%" },
-            HN: { name: "Honduras", gdp: "$34.2B", gdpCapita: "$3,200", pop: "10.6M", hdi: "0.624", cpi: "23/100", growth: "+3.4%" },
-            HU: { name: "Hungary", gdp: "$225B", gdpCapita: "$23,400", pop: "9.6M", hdi: "0.851", cpi: "42/100", growth: "+2.2%" },
-            IS: { name: "Iceland", gdp: "$32.4B", gdpCapita: "$83,000", pop: "395K", hdi: "0.957", cpi: "74/100", growth: "+2.4%" },
-            IN: { name: "India", gdp: "$4.12T", gdpCapita: "$2,850", pop: "1.44B", hdi: "0.644", cpi: "39/100", growth: "+6.8%" },
-            ID: { name: "Indonesia", gdp: "$1.47T", gdpCapita: "$5,200", pop: "281.6M", hdi: "0.713", cpi: "34/100", growth: "+5.1%" },
-            IR: { name: "Iran", gdp: "$425B", gdpCapita: "$4,800", pop: "89.5M", hdi: "0.780", cpi: "24/100", growth: "+2.5%" },
-            IQ: { name: "Iraq", gdp: "$265B", gdpCapita: "$5,800", pop: "46.2M", hdi: "0.673", cpi: "23/100", growth: "+3.0%" },
-            IE: { name: "Ireland", gdp: "$545B", gdpCapita: "$106,000", pop: "5.3M", hdi: "0.945", cpi: "77/100", growth: "+2.5%" },
-            IL: { name: "Israel", gdp: "$530B", gdpCapita: "$54,200", pop: "9.9M", hdi: "0.919", cpi: "62/100", growth: "+1.9%" },
-            IT: { name: "Italy", gdp: "$2.32T", gdpCapita: "$39,500", pop: "58.7M", hdi: "0.895", cpi: "56/100", growth: "+0.7%" },
-            JM: { name: "Jamaica", gdp: "$19.5B", gdpCapita: "$6,900", pop: "2.8M", hdi: "0.709", cpi: "44/100", growth: "+1.8%" },
-            JP: { name: "Japan", gdp: "$4.35T", gdpCapita: "$35,100", pop: "123.8M", hdi: "0.920", cpi: "73/100", growth: "+0.9%" },
-            JO: { name: "Jordan", gdp: "$52.4B", gdpCapita: "$4,600", pop: "11.4M", hdi: "0.736", cpi: "46/100", growth: "+2.6%" },
-            KZ: { name: "Kazakhstan", gdp: "$275B", gdpCapita: "$13,800", pop: "20.1M", hdi: "0.802", cpi: "39/100", growth: "+4.2%" },
-            KE: { name: "Kenya", gdp: "$116B", gdpCapita: "$2,100", pop: "56.2M", hdi: "0.596", cpi: "31/100", growth: "+5.2%" },
-            KI: { name: "Kiribati", gdp: "$290M", gdpCapita: "$2,200", pop: "135K", hdi: "0.623", cpi: "33/100", growth: "+2.5%" },
-            KP: { name: "North Korea", gdp: "$16.5B", gdpCapita: "$640", pop: "26.2M", hdi: "0.465", cpi: "17/100", growth: "+0.1%" },
-            KR: { name: "South Korea", gdp: "$1.78T", gdpCapita: "$34,500", pop: "51.7M", hdi: "0.929", cpi: "63/100", growth: "+2.2%" },
-            KW: { name: "Kuwait", gdp: "$165B", gdpCapita: "$38,200", pop: "4.3M", hdi: "0.847", cpi: "46/100", growth: "+2.8%" },
-            KG: { name: "Kyrgyzstan", gdp: "$14.2B", gdpCapita: "$2,000", pop: "7.1M", hdi: "0.697", cpi: "26/100", growth: "+4.5%" },
-            LA: { name: "Laos", gdp: "$15.8B", gdpCapita: "$2,100", pop: "7.7M", hdi: "0.607", cpi: "28/100", growth: "+4.0%" },
-            LV: { name: "Latvia", gdp: "$44.5B", gdpCapita: "$23,800", pop: "1.9M", hdi: "0.863", cpi: "60/100", growth: "+2.0%" },
-            LB: { name: "Lebanon", gdp: "$21.5B", gdpCapita: "$4,100", pop: "5.3M", hdi: "0.703", cpi: "24/100", growth: "-0.5%" },
-            LS: { name: "Lesotho", gdp: "$2.6B", gdpCapita: "$1,150", pop: "2.3M", hdi: "0.521", cpi: "41/100", growth: "+2.2%" },
-            LR: { name: "Liberia", gdp: "$4.4B", gdpCapita: "$800", pop: "5.5M", hdi: "0.487", cpi: "25/100", growth: "+5.0%" },
-            LY: { name: "Libya", gdp: "$48.2B", gdpCapita: "$7,100", pop: "6.9M", hdi: "0.746", cpi: "18/100", growth: "+4.8%" },
-            LI: { name: "Liechtenstein", gdp: "$7.3B", gdpCapita: "$185,000", pop: "40K", hdi: "0.935", cpi: "82/100", growth: "+1.6%" },
-            LT: { name: "Lithuania", gdp: "$79.5B", gdpCapita: "$28,100", pop: "2.8M", hdi: "0.875", cpi: "61/100", growth: "+2.2%" },
-            LU: { name: "Luxembourg", gdp: "$89.2B", gdpCapita: "$134,000", pop: "665K", hdi: "0.930", cpi: "78/100", growth: "+1.5%" },
-            MG: { name: "Madagascar", gdp: "$16.4B", gdpCapita: "$530", pop: "31.2M", hdi: "0.487", cpi: "25/100", growth: "+4.6%" },
-            MW: { name: "Malawi", gdp: "$14.2B", gdpCapita: "$640", pop: "21.5M", hdi: "0.508", cpi: "26/100", growth: "+4.1%" },
-            MY: { name: "Malaysia", gdp: "$445B", gdpCapita: "$13,200", pop: "34.7M", hdi: "0.803", cpi: "50/100", growth: "+4.5%" },
-            MV: { name: "Maldives", gdp: "$6.9B", gdpCapita: "$12,800", pop: "525K", hdi: "0.747", cpi: "39/100", growth: "+5.2%" },
-            ML: { name: "Mali", gdp: "$21.8B", gdpCapita: "$910", pop: "24.1M", hdi: "0.410", cpi: "28/100", growth: "+4.0%" },
-            MT: { name: "Malta", gdp: "$21.4B", gdpCapita: "$40,100", pop: "540K", hdi: "0.918", cpi: "51/100", growth: "+4.1%" },
-            MH: { name: "Marshall Islands", gdp: "$280M", gdpCapita: "$6,800", pop: "42K", hdi: "0.639", cpi: "23/100", growth: "+2.0%" },
-            MR: { name: "Mauritania", gdp: "$10.5B", gdpCapita: "$2,150", pop: "4.9M", hdi: "0.556", cpi: "30/100", growth: "+4.9%" },
-            MU: { name: "Mauritius", gdp: "$15.4B", gdpCapita: "$12,100", pop: "1.3M", hdi: "0.802", cpi: "50/100", growth: "+4.4%" },
-            MX: { name: "Mexico", gdp: "$1.82T", gdpCapita: "$13,900", pop: "129.5M", hdi: "0.758", cpi: "31/100", growth: "+2.1%" },
-            FM: { name: "Micronesia", gdp: "$460M", gdpCapita: "$4,100", pop: "115K", hdi: "0.628", cpi: "23/100", growth: "+2.2%" },
-            MD: { name: "Moldova", gdp: "$17.2B", gdpCapita: "$6,800", pop: "2.5M", hdi: "0.767", cpi: "42/100", growth: "+3.5%" },
-            MC: { name: "Monaco", gdp: "$9.2B", gdpCapita: "$240,000", pop: "39K", hdi: "0.956", cpi: "77/100", growth: "+1.2%" },
-            MN: { name: "Mongolia", gdp: "$22.4B", gdpCapita: "$6,400", pop: "3.5M", hdi: "0.741", cpi: "33/100", growth: "+5.5%" },
-            ME: { name: "Montenegro", gdp: "$7.5B", gdpCapita: "$12,100", pop: "620K", hdi: "0.832", cpi: "46/100", growth: "+3.2%" },
-            MA: { name: "Morocco", gdp: "$152B", gdpCapita: "$4,100", pop: "38.2M", hdi: "0.683", cpi: "38/100", growth: "+3.1%" },
-            MZ: { name: "Mozambique", gdp: "$22.4B", gdpCapita: "$650", pop: "34.8M", hdi: "0.461", cpi: "25/100", growth: "+5.0%" },
-            MM: { name: "Myanmar", gdp: "$68.5B", gdpCapita: "$1,250", pop: "54.9M", hdi: "0.585", cpi: "20/100", growth: "+1.2%" },
-            NA: { name: "Namibia", gdp: "$13.5B", gdpCapita: "$5,100", pop: "2.6M", hdi: "0.615", cpi: "49/100", growth: "+3.5%" },
-            NR: { name: "Nauru", gdp: "$150M", gdpCapita: "$12,000", pop: "12K", hdi: "0.683", cpi: "23/100", growth: "+1.8%" },
-            NP: { name: "Nepal", gdp: "$42.5B", gdpCapita: "$1,400", pop: "31.2M", hdi: "0.601", cpi: "35/100", growth: "+4.2%" },
-            NL: { name: "Netherlands", gdp: "$1.15T", gdpCapita: "$64,200", pop: "17.9M", hdi: "0.941", cpi: "82/100", growth: "+1.3%" },
-            NZ: { name: "New Zealand", gdp: "$255B", gdpCapita: "$49,100", pop: "5.3M", hdi: "0.937", cpi: "84/100", growth: "+1.5%" },
-            NI: { name: "Nicaragua", gdp: "$18.2B", gdpCapita: "$2,600", pop: "7.1M", hdi: "0.667", cpi: "26/100", growth: "+3.5%" },
-            NE: { name: "Niger", gdp: "$17.4B", gdpCapita: "$630", pop: "27.2M", hdi: "0.394", cpi: "32/100", growth: "+6.5%" },
-            NG: { name: "Nigeria", gdp: "$395B", gdpCapita: "$1,750", pop: "229.2M", hdi: "0.548", cpi: "25/100", growth: "+3.1%" },
-            MK: { name: "North Macedonia", gdp: "$15.4B", gdpCapita: "$7,500", pop: "2.1M", hdi: "0.770", cpi: "40/100", growth: "+2.5%" },
-            NO: { name: "Norway", gdp: "$545B", gdpCapita: "$98,000", pop: "5.6M", hdi: "0.961", cpi: "84/100", growth: "+1.4%" },
-            OM: { name: "Oman", gdp: "$112B", gdpCapita: "$22,500", pop: "4.7M", hdi: "0.816", cpi: "43/100", growth: "+2.7%" },
-            PK: { name: "Pakistan", gdp: "$340B", gdpCapita: "$1,450", pop: "245.2M", hdi: "0.544", cpi: "29/100", growth: "+2.4%" },
-            PW: { name: "Palau", gdp: "$300M", gdpCapita: "$16,500", pop: "18K", hdi: "0.767", cpi: "48/100", growth: "+2.1%" },
-            PA: { name: "Panama", gdp: "$87.5B", gdpCapita: "$19,500", pop: "4.5M", hdi: "0.820", cpi: "35/100", growth: "+4.0%" },
-            PG: { name: "Papua New Guinea", gdp: "$32.4B", gdpCapita: "$3,100", pop: "10.5M", hdi: "0.558", cpi: "29/100", growth: "+4.5%" },
-            PY: { name: "Paraguay", gdp: "$45.2B", gdpCapita: "$6,500", pop: "6.9M", hdi: "0.717", cpi: "28/100", growth: "+3.8%" },
-            PE: { name: "Peru", gdp: "$270B", gdpCapita: "$7,900", pop: "34.4M", hdi: "0.762", cpi: "33/100", growth: "+2.7%" },
-            PH: { name: "Philippines", gdp: "$445B", gdpCapita: "$3,850", pop: "119.1M", hdi: "0.699", cpi: "34/100", growth: "+5.9%" },
-            PL: { name: "Poland", gdp: "$860B", gdpCapita: "$23,000", pop: "37.6M", hdi: "0.875", cpi: "54/100", growth: "+3.0%" },
-            PT: { name: "Portugal", gdp: "$292B", gdpCapita: "$28,100", pop: "10.4M", hdi: "0.866", cpi: "61/100", growth: "+1.5%" },
-            QA: { name: "Qatar", gdp: "$245B", gdpCapita: "$85,000", pop: "2.7M", hdi: "0.855", cpi: "53/100", growth: "+2.2%" },
-            RO: { name: "Romania", gdp: "$365B", gdpCapita: "$19,200", pop: "19.0M", hdi: "0.821", cpi: "46/100", growth: "+2.8%" },
-            RU: { name: "Russia", gdp: "$2.05T", gdpCapita: "$14,100", pop: "144.0M", hdi: "0.822", cpi: "26/100", growth: "+1.1%" },
-            RW: { name: "Rwanda", gdp: "$15.2B", gdpCapita: "$1,050", pop: "14.3M", hdi: "0.534", cpi: "53/100", growth: "+6.9%" },
-            KN: { name: "Saint Kitts and Nevis", gdp: "$1.1B", gdpCapita: "$22,000", pop: "48K", hdi: "0.777", cpi: "41/100", growth: "+3.2%" },
-            LC: { name: "Saint Lucia", gdp: "$2.4B", gdpCapita: "$13,100", pop: "180K", hdi: "0.715", cpi: "55/100", growth: "+4.0%" },
-            VC: { name: "Saint Vincent and the Grenadines", gdp: "$1.0B", gdpCapita: "$9,200", pop: "104K", hdi: "0.751", cpi: "43/100", growth: "+4.5%" },
-            WS: { name: "Samoa", gdp: "$950M", gdpCapita: "$4,500", pop: "225K", hdi: "0.707", cpi: "44/100", growth: "+3.0%" },
-            SM: { name: "San Marino", gdp: "$1.9B", gdpCapita: "$56,000", pop: "34K", hdi: "0.853", cpi: "59/100", growth: "+1.2%" },
-            ST: { name: "São Tomé and Príncipe", gdp: "$630M", gdpCapita: "$2,600", pop: "235K", hdi: "0.592", cpi: "45/100", growth: "+3.8%" },
-            SA: { name: "Saudi Arabia", gdp: "$1.12T", gdpCapita: "$32,500", pop: "33.5M", hdi: "0.875", cpi: "52/100", growth: "+2.5%" },
-            SN: { name: "Senegal", gdp: "$31.5B", gdpCapita: "$1,750", pop: "18.2M", hdi: "0.511", cpi: "43/100", growth: "+5.8%" },
-            RS: { name: "Serbia", gdp: "$75.2B", gdpCapita: "$11,500", pop: "6.6M", hdi: "0.802", cpi: "36/100", growth: "+3.5%" },
-            SC: { name: "Seychelles", gdp: "$2.2B", gdpCapita: "$21,800", pop: "100K", hdi: "0.802", cpi: "70/100", growth: "+3.8%" },
-            SL: { name: "Sierra Leone", gdp: "$4.3B", gdpCapita: "$500", pop: "8.9M", hdi: "0.477", cpi: "20/100", growth: "+4.5%" },
-            SG: { name: "Singapore", gdp: "$525B", gdpCapita: "$88,500", pop: "5.9M", hdi: "0.939", cpi: "83/100", growth: "+2.4%" },
-            SK: { name: "Slovakia", gdp: "$132B", gdpCapita: "$24,200", pop: "5.4M", hdi: "0.860", cpi: "54/100", growth: "+2.1%" },
-            SI: { name: "Slovenia", gdp: "$68.5B", gdpCapita: "$32,100", pop: "2.1M", hdi: "0.918", cpi: "56/100", growth: "+2.3%" },
-            SB: { name: "Solomon Islands", gdp: "$1.6B", gdpCapita: "$2,200", pop: "750K", hdi: "0.562", cpi: "43/100", growth: "+2.5%" },
-            SO: { name: "Somalia", gdp: "$11.8B", gdpCapita: "$650", pop: "18.3M", hdi: "0.380", cpi: "11/100", growth: "+3.7%" },
-            ZA: { name: "South Africa", gdp: "$390B", gdpCapita: "$6,300", pop: "61M", hdi: "0.717", cpi: "41/100", growth: "+1.5%" },
-            SS: { name: "South Sudan", gdp: "$5.2B", gdpCapita: "$450", pop: "11.5M", hdi: "0.385", cpi: "13/100", growth: "-2.0%" },
-            ES: { name: "Spain", gdp: "$1.62T", gdpCapita: "$33,800", pop: "48.3M", hdi: "0.905", cpi: "60/100", growth: "+1.8%" },
-            LK: { name: "Sri Lanka", gdp: "$84.5B", gdpCapita: "$3,800", pop: "21.9M", hdi: "0.782", cpi: "34/100", growth: "+2.2%" },
-            SD: { name: "Sudan", gdp: "$25.4B", gdpCapita: "$520", pop: "49.0M", hdi: "0.516", cpi: "20/100", growth: "-4.5%" },
-            SR: { name: "Suriname", gdp: "$4.2B", gdpCapita: "$6,800", pop: "625K", hdi: "0.690", cpi: "40/100", growth: "+2.5%" },
-            SE: { name: "Sweden", gdp: "$595B", gdpCapita: "$56,500", pop: "10.5M", hdi: "0.947", cpi: "82/100", growth: "+1.2%" },
-            CH: { name: "Switzerland", gdp: "$905B", gdpCapita: "$102,000", pop: "8.9M", hdi: "0.962", cpi: "82/100", growth: "+1.3%" },
-            SY: { name: "Syria", gdp: "$12.5B", gdpCapita: "$550", pop: "23.5M", hdi: "0.557", cpi: "13/100", growth: "+0.5%" },
-            TJ: { name: "Tajikistan", gdp: "$12.4B", gdpCapita: "$1,200", pop: "10.3M", hdi: "0.679", cpi: "20/100", growth: "+6.0%" },
-            TZ: { name: "Tanzania", gdp: "$85.2B", gdpCapita: "$1,250", pop: "67.4M", hdi: "0.532", cpi: "40/100", growth: "+5.5%" },
-            TH: { name: "Thailand", gdp: "$515B", gdpCapita: "$7,200", pop: "71.8M", hdi: "0.803", cpi: "35/100", growth: "+2.8%" },
-            TL: { name: "Timor-Leste", gdp: "$2.1B", gdpCapita: "$1,500", pop: "1.4M", hdi: "0.666", cpi: "43/100", growth: "+3.2%" },
-            TG: { name: "Togo", gdp: "$9.2B", gdpCapita: "$1,000", pop: "9.3M", hdi: "0.539", cpi: "31/100", growth: "+5.1%" },
-            TO: { name: "Tonga", gdp: "$520M", gdpCapita: "$5,000", pop: "105K", hdi: "0.739", cpi: "44/100", growth: "+2.4%" },
-            TT: { name: "Trinidad and Tobago", gdp: "$28.4B", gdpCapita: "$18,400", pop: "1.5M", hdi: "0.810", cpi: "42/100", growth: "+2.0%" },
-            TN: { name: "Tunisia", gdp: "$52.4B", gdpCapita: "$4,200", pop: "12.5M", hdi: "0.732", cpi: "40/100", growth: "+1.9%" },
-            TR: { name: "Türkiye", gdp: "$1.15T", gdpCapita: "$13,200", pop: "86.0M", hdi: "0.838", cpi: "34/100", growth: "+3.0%" },
-            TM: { name: "Turkmenistan", gdp: "$65.2B", gdpCapita: "$10,100", pop: "6.5M", hdi: "0.745", cpi: "18/100", growth: "+5.2%" },
-            TV: { name: "Tuvalu", gdp: "$65M", gdpCapita: "$5,800", pop: "11K", hdi: "0.641", cpi: "41/100", growth: "+2.0%" },
-            UG: { name: "Uganda", gdp: "$52.5B", gdpCapita: "$1,050", pop: "49.2M", hdi: "0.550", cpi: "26/100", growth: "+6.0%" },
-            UA: { name: "Ukraine", gdp: "$178B", gdpCapita: "$4,800", pop: "37.5M", hdi: "0.734", cpi: "36/100", growth: "+3.2%" },
-            AE: { name: "United Arab Emirates", gdp: "$535B", gdpCapita: "$52,500", pop: "9.5M", hdi: "0.911", cpi: "68/100", growth: "+3.5%" },
-            GB: { name: "United Kingdom", gdp: "$3.5T", gdpCapita: "$51,000", pop: "68M", hdi: "0.940", cpi: "71/100", growth: "+1.4%" },
-            US: { name: "United States", gdp: "$28.7T", gdpCapita: "$85,300", pop: "345M", hdi: "0.927", cpi: "69/100", growth: "+2.1%" },
-            UY: { name: "Uruguay", gdp: "$79.2B", gdpCapita: "$22,100", pop: "3.4M", hdi: "0.830", cpi: "73/100", growth: "+3.2%" },
-            UZ: { name: "Uzbekistan", gdp: "$105B", gdpCapita: "$2,850", pop: "36.8M", hdi: "0.727", cpi: "33/100", growth: "+5.5%" },
-            VU: { name: "Vanuatu", gdp: "$1.1B", gdpCapita: "$3,300", pop: "335K", hdi: "0.614", cpi: "48/100", growth: "+2.8%" },
-            VE: { name: "Venezuela", gdp: "$102B", gdpCapita: "$3,600", pop: "29.0M", hdi: "0.691", cpi: "13/100", growth: "+4.0%" },
-            VN: { name: "Vietnam", gdp: "$465B", gdpCapita: "$4,600", pop: "99.5M", hdi: "0.726", cpi: "41/100", growth: "+6.0%" },
-            YE: { name: "Yemen", gdp: "$19.5B", gdpCapita: "$580", pop: "34.8M", hdi: "0.424", cpi: "16/100", growth: "+1.5%" },
-            ZM: { name: "Zambia", gdp: "$29.5B", gdpCapita: "$1,450", pop: "21.1M", hdi: "0.565", cpi: "37/100", growth: "+4.3%" },
-            ZW: { name: "Zimbabwe", gdp: "$28.2B", gdpCapita: "$1,700", pop: "16.8M", hdi: "0.550", cpi: "24/100", growth: "+3.5%" }
+        // Comprehensive global data matrix mapping all 193 UN sovereign states
+        const countryDataMatrix = {
+            "AF": { name: "Afghanistan", gdp: "$14.5 Billion", gdpCapita: "$360", pop: "43.3 Million", hdi: "0.462", cpi: "20/100", growth: "+0.5%", history: "A historic crossroads of Central Asia, Afghanistan has experienced centuries of imperial expansions, silk road trade dominance, and intense modern geopolitical conflicts." },
+            "AL": { name: "Albania", gdp: "$25.2 Billion", gdpCapita: "$8,900", pop: "2.8 Million", hdi: "0.789", cpi: "37/100", growth: "+3.3%", history: "Declaring independence from the Ottoman Empire in 1912, Albania navigated a deeply isolated communist regime in the late 20th century before turning into an open market economy." },
+            "DZ": { name: "Algeria", gdp: "$260 Billion", gdpCapita: "$5,700", pop: "46.8 Million", hdi: "0.745", cpi: "36/100", growth: "+3.8%", history: "A key center of the ancient Numidian and Ottoman eras, Algeria gained independence from France in 1962 after a definitive war of national liberation." },
+            "AD": { name: "Andorra", gdp: "$3.9 Billion", gdpCapita: "$47,000", pop: "84,000", hdi: "0.884", cpi: "46/100", growth: "+1.5%", history: "Formed in 1278 under a charter of joint sovereignty, this Pyrenean microstate has been ruled continuously by two co-princes: the French President and the Spanish Bishop of Urgell." },
+            "AO": { name: "Angola", gdp: "$92.4 Billion", gdpCapita: "$2,500", pop: "37.8 Million", hdi: "0.591", cpi: "33/100", growth: "+2.8%", history: "Following centuries of Portuguese colonial rule, Angola achieved independence in 1975, weathered a multi-decade civil war, and transformed into a major African oil exporter." },
+            "AG": { name: "Antigua and Barbuda", gdp: "$1.9 Billion", gdpCapita: "$19,200", pop: "94,000", hdi: "0.826", cpi: "41/100", growth: "+5.4%", history: "Settled by indigenous groups and later colonized by Great Britain for sugar production, these Caribbean islands achieved full independence within the Commonwealth in 1981." },
+            "AR": { name: "Argentina", gdp: "$630 Billion", gdpCapita: "$13,600", pop: "46.2 Million", hdi: "0.849", cpi: "37/100", growth: "-1.5%", history: "Gaining independence from Spain in 1816, Argentina became one of the wealthiest nations by the early 20th century before navigating complex political cycles and structural economic shifts." },
+            "AM": { name: "Armenia", gdp: "$25.4 Billion", gdpCapita: "$8,600", pop: "2.9 Million", hdi: "0.786", cpi: "47/100", growth: "+7.0%", history: "Boasting one of the world's oldest continuous civilizations and being the first nation to adopt Christianity as a state religion, Armenia re-established independence in 1991 from the USSR." },
+            "AU": { name: "Australia", gdp: "$1.79 Trillion", gdpCapita: "$66,100", pop: "26.7 Million", hdi: "0.946", cpi: "75/100", growth: "+2.0%", history: "Inhabited by First Nations people for over 65,000 years, Australia saw British colonization begin in 1788 and federated into a highly developed, resource-wealthy nation in 1901." },
+            "AT": { name: "Austria", gdp: "$540 Billion", gdpCapita: "$59,200", pop: "9.1 Million", hdi: "0.926", cpi: "71/100", growth: "+0.8%", history: "Once the powerful heart of the vast Austro-Hungarian Empire, Austria emerged from the collapses of both World Wars to establish its identity as a wealthy, neutral European republic." },
+            "AZ": { name: "Azerbaijan", gdp: "$79.5 Billion", gdpCapita: "$7,800", pop: "10.2 Million", hdi: "0.760", cpi: "23/100", growth: "+2.4%", history: "Situated at the boundary of Eastern Europe and Western Asia, Azerbaijan won independence from the Russian Empire in 1918, was absorbed by the Soviet Union, and regained independence in 1991." },
+            "BS": { name: "Bahamas", gdp: "$14.1 Billion", gdpCapita: "$34,500", pop: "412,000", hdi: "0.820", cpi: "64/100", growth: "+1.8%", history: "The landing site of Christopher Columbus in 1492, the Bahamas became a British crown colony in 1718 and gained independence in 1973, developing into a major hub for tourism and finance." },
+            "BH": { name: "Bahrain", gdp: "$46.8 Billion", gdpCapita: "$29,100", pop: "1.6 Million", hdi: "0.888", cpi: "42/100", growth: "+3.0%", history: "An ancient center of the Dilmun civilization, Bahrain was a British protectorate until 1971, when it declared independence and became a prominent banking capital in the Persian Gulf." },
+            "BD": { name: "Bangladesh", gdp: "$455 Billion", gdpCapita: "$2,650", pop: "174.4 Million", hdi: "0.661", cpi: "24/100", growth: "+5.6%", history: "Formerly part of British India and then East Pakistan, Bangladesh achieved independence in 1971 following a historic liberation war, emerging as a major global textile exporter." },
+            "BB": { name: "Barbados", gdp: "$6.4 Billion", gdpCapita: "$22,300", pop: "282,000", hdi: "0.809", cpi: "65/100", growth: "+3.7%", history: "Inhabited by Arawaks and Caribs, Barbados became a major British sugar colony. It gained independence in 1966 and officially transitioned into a republic in 2021." },
+            "BY": { name: "Belarus", gdp: "$74.2 Billion", gdpCapita: "$7,900", pop: "9.2 Million", hdi: "0.801", cpi: "37/100", growth: "+1.0%", history: "Part of the Grand Duchy of Lithuania and later the Soviet Union, Belarus declared independence in 1991, retaining close economic and geopolitical ties with Russia." },
+            "BE": { name: "Belgium", gdp: "$655 Billion", gdpCapita: "$55,400", pop: "11.8 Million", hdi: "0.942", cpi: "73/100", growth: "+1.1%", history: "Gaining independence from the Netherlands in 1830, Belgium became an early industrial powerhouse and currently hosts the headquarters of both NATO and the European Union." },
+            "BZ": { name: "Belize", gdp: "$3.2 Billion", gdpCapita: "$7,600", pop: "415,000", hdi: "0.700", cpi: "32/100", growth: "+3.0%", history: "The heart of ancient Maya civilization, Belize became British Honduras in 1862 and secured independence in 1981, remaining the only English-speaking nation in Central America." },
+            "BJ": { name: "Benin", gdp: "$20.4 Billion", gdpCapita: "$1,450", pop: "14.1 Million", hdi: "0.504", cpi: "43/100", growth: "+6.2%", history: "The historic seat of the Kingdom of Dahomey, Benin gained independence from France in 1960 and transitioned to a stable multi-party democracy in the early 1990s." },
+            "BT": { name: "Bhutan", gdp: "$2.9 Billion", gdpCapita: "$3,700", pop: "790,000", hdi: "0.681", cpi: "68/100", growth: "+4.5%", history: "A fiercely independent Himalayan kingdom that was never colonized, Bhutan famously transitioned to a constitutional monarchy and introduced Gross National Happiness." },
+            "BO": { name: "Bolivia", gdp: "$46.5 Billion", gdpCapita: "$3,800", pop: "12.5 Million", hdi: "0.698", cpi: "29/100", growth: "+2.0%", history: "Named after Simon Bolivar, the country threw off Spanish rule in 1825 and contains a rich history of indigenous resistance and extensive mineral wealth." },
+            "BA": { name: "Bosnia and Herzegovina", gdp: "$28.5 Billion", gdpCapita: "$8,800", pop: "3.2 Million", hdi: "0.779", cpi: "35/100", growth: "+2.5%", history: "A cultural crossroads of Ottoman and Austro-Hungarian influences, the nation declared independence from Yugoslavia in 1992, leading to a war that concluded with the 1995 Dayton Accords." },
+            "BW": { name: "Botswana", gdp: "$21.4 Billion", gdpCapita: "$8,200", pop: "2.6 Million", hdi: "0.708", cpi: "59/100", growth: "+3.2%", history: "Formerly the British protectorate of Bechuanaland, Botswana gained independence in 1966 and built one of Africa's most stable democracies, fueled by diamond stewardship." },
+            "BR": { name: "Brazil", gdp: "$2.28 Trillion", gdpCapita: "$10,600", pop: "217.6 Million", hdi: "0.760", cpi: "36/100", growth: "+2.3%", history: "Declared independence from Portugal in 1822 as an empire before becoming a republic in 1889, Brazil has grown into South America's dominant economic and territorial force." },
+            "BN": { name: "Brunei", gdp: "$15.8 Billion", gdpCapita: "$35,200", pop: "455,000", hdi: "0.823", cpi: "60/100", growth: "+2.1%", history: "A powerful maritime empire in the 14th to 16th centuries, Brunei became a British protectorate and regained complete independence in 1984 under an absolute monarchy." },
+            "BG": { name: "Bulgaria", gdp: "$107 Billion", gdpCapita: "$16,500", pop: "6.4 Million", hdi: "0.817", cpi: "45/100", growth: "+2.0%", history: "One of the oldest states in Europe, Bulgaria shook off Ottoman rule in 1878, aligned with the Eastern Bloc post-WWII, and joined the European Union in 2007." },
+            "BF": { name: "Burkina Faso", gdp: "$21.5 Billion", gdpCapita: "$920", pop: "23.5 Million", hdi: "0.438", cpi: "41/100", growth: "+4.8%", history: "Formerly known as Upper Volta under French colonial rule, the nation gained independence in 1960 and was renamed Burkina Faso ('Land of Incorruptible People') in 1984." },
+            "BI": { name: "Burundi", gdp: "$3.9 Billion", gdpCapita: "$290", pop: "13.6 Million", hdi: "0.420", cpi: "20/100", growth: "+4.0%", history: "An independent kingdom for centuries, Burundi was colonized by Germany and later Belgium, achieving independence in 1962 as a republic." },
+            "CV": { name: "Cabo Verde", gdp: "$2.7 Billion", gdpCapita: "$4,600", pop: "590,000", hdi: "0.661", cpi: "64/100", growth: "+4.5%", history: "Uninhabited until discovered by Portuguese mariners in the 15th century, Cabo Verde became a center of the transatlantic slave trade and won independence in 1975." },
+            "KH": { name: "Cambodia", gdp: "$34.3 Billion", gdpCapita: "$2,050", pop: "17.1 Million", hdi: "0.600", cpi: "22/100", growth: "+6.1%", history: "The successor state to the mighty Khmer Empire, Cambodia gained independence from France in 1953, endured decades of civil conflict and Khmer Rouge rule, and is rebuilding rapidly." },
+            "CM": { name: "Cameroon", gdp: "$49.5 Billion", gdpCapita: "$1,720", pop: "29.1 Million", hdi: "0.587", cpi: "27/100", growth: "+4.2%", history: "Colonialized sequentially by Germany, France, and Great Britain, modern Cameroon federated into a single independent republic in 1961." },
+            "CA": { name: "Canada", gdp: "$2.24 Trillion", gdpCapita: "$55,100", pop: "40.8 Million", hdi: "0.935", cpi: "76/100", growth: "+1.6%", history: "Home to Indigenous peoples for millennia, Canada was settled by French and British explorers, federated in 1867, and evolved peacefully into an advanced constitutional monarchy." },
+            "CF": { name: "Central African Republic", gdp: "$2.7 Billion", gdpCapita: "$510", pop: "5.8 Million", hdi: "0.387", cpi: "24/100", growth: "+1.5%", history: "Gaining independence from France in 1960, this resource-rich nation has navigated decades of political fragility and internal conflict while working toward stability." },
+            "TD": { name: "Chad", gdp: "$13.2 Billion", gdpCapita: "$720", pop: "18.6 Million", hdi: "0.394", cpi: "19/100", growth: "+3.0%", history: "A vital hub for trans-Saharan trade routes for centuries, Chad obtained independence from France in 1960 and continues to navigate regional security challenges." },
+            "CL": { name: "Chile", gdp: "$345 Billion", gdpCapita: "$17,400", pop: "19.6 Million", hdi: "0.860", cpi: "66/100", growth: "+2.0%", history: "Securing independence from Spain in 1818, Chile built a resilient economic foundation, transitioned to democracy in 1990, and became a leading South American nation." },
+            "CN": { name: "China", gdp: "$19.4 Trillion", gdpCapita: "$13,750", pop: "1.41 Billion", hdi: "0.788", cpi: "42/100", growth: "+4.5%", history: "Boasting over 4,000 years of continuous dynastic history, the People's Republic of China was established in 1949 and has ascended into a global economic and technological superpower." },
+            "CO": { name: "Colombia", gdp: "$385 Billion", gdpCapita: "$7,400", pop: "52.3 Million", hdi: "0.758", cpi: "40/100", growth: "+2.5%", history: "The center of Spain's New Granada viceroyalty, Colombia won independence in 1819 under Simon Bolivar and is currently diversifying its vibrant South American economy." },
+            "KM": { name: "Comoros", gdp: "$1.4 Billion", gdpCapita: "$1,600", pop: "860,000", hdi: "0.586", cpi: "20/100", growth: "+3.5%", history: "An archipelago shaped by Shirazi Arab traders and African cultures, Comoros gained independence from France in 1975." },
+            "CG": { name: "Congo (Brazzaville)", gdp: "$15.2 Billion", gdpCapita: "$2,500", pop: "6.2 Million", hdi: "0.593", cpi: "22/100", growth: "+4.0%", history: "Part of the historical Kingdom of Loango, the Republic of the Congo gained independence from France in 1960 and developed a significant oil economy." },
+            "CD": { name: "Congo (Kinshasa)", gdp: "$67.5 Billion", gdpCapita: "$660", pop: "105 Million", hdi: "0.481", cpi: "20/100", growth: "+6.5%", history: "Enduring brutal exploitation as a personal colony of King Leopold II and later Belgium, the DRC won independence in 1960 and possesses vast, globally critical mineral resources." },
+            "CR": { name: "Costa Rica", gdp: "$88.2 Billion", gdpCapita: "$16,800", pop: "5.2 Million", hdi: "0.806", cpi: "55/100", growth: "+3.8%", history: "Breaking away from Spanish rule in 1821, Costa Rica famously abolished its military in 1948, focusing investment instead on education, healthcare, and pioneering ecotourism." },
+            "CI": { name: "Côte d'Ivoire", gdp: "$81.4 Billion", gdpCapita: "$2,750", pop: "29.7 Million", hdi: "0.534", cpi: "40/100", growth: "+6.6%", history: "A major hub of West African trade networks, the Ivory Coast achieved independence from France in 1960 and is today the world's leading producer of cocoa beans." },
+            "HR": { name: "Croatia", gdp: "$82.4 Billion", gdpCapita: "$21,500", pop: "3.8 Million", hdi: "0.867", cpi: "50/100", growth: "+2.8%", history: "A historic kingdom that later joined the Austro-Hungarian Empire and Yugoslavia, Croatia declared independence in 1991, joining the EU in 2013 and the Eurozone in 2023." },
+            "CU": { name: "Cuba", gdp: "$107 Billion", gdpCapita: "$9,500", pop: "11.1 Million", hdi: "0.764", cpi: "42/100", growth: "+0.5%", history: "Gaining independence from Spain in 1898, Cuba underwent a seismic socialist revolution in 1959 led by Fidel Castro, shaping its distinct social and political system." },
+            "CY": { name: "Cyprus", gdp: "$32.4 Billion", gdpCapita: "$34,800", pop: "930,000", hdi: "0.907", cpi: "53/100", growth: "+2.9%", history: "A highly strategic Mediterranean island ruled by Mycenaeans, Romans, Ottomans, and the British, Cyprus gained independence in 1960 and joined the EU in 2004." },
+            "CZ": { name: "Czechia", gdp: "$335 Billion", gdpCapita: "$31,100", pop: "10.8 Million", hdi: "0.895", cpi: "57/100", growth: "+1.4%", history: "The historic core of the Kingdom of Bohemia, Czechia formed Czechoslovakia in 1918 and engineered a peaceful 'Velvet Divorce' in 1993 to become an independent republic." },
+            "DK": { name: "Denmark", gdp: "$422 Billion", gdpCapita: "$71,200", pop: "5.9 Million", hdi: "0.952", cpi: "90/100", growth: "+1.3%", history: "Once the home base of Viking explorers and rulers of the Kalmar Union, Denmark evolved into a highly advanced Nordic welfare state with premium living standards." },
+            "DJ": { name: "Djibouti", gdp: "$4.1 Billion", gdpCapita: "$3,900", pop: "1.1 Million", hdi: "0.515", cpi: "30/100", growth: "+5.1%", history: "Gaining independence from France in 1977, Djibouti leverages its geography at the entrance to the Red Sea to host major international maritime and military installations." },
+            "DM": { name: "Dominica", gdp: "$680 Million", gdpCapita: "$9,300", pop: "73,000", hdi: "0.740", cpi: "53/100", growth: "+4.6%", history: "The last Caribbean island to be colonized by Europeans due to fierce resistance by the Kalinago people, Dominica gained independence from the UK in 1978." },
+            "DO": { name: "Dominican Republic", gdp: "$122 Billion", gdpCapita: "$11,100", pop: "11.4 Million", hdi: "0.766", cpi: "35/100", growth: "+5.0%", history: "The site of the first permanent European settlement in the Americas, the nation declared independence from Spain in 1821 and has built a resilient economy." },
+            "EC": { name: "Ecuador", gdp: "$121 Billion", gdpCapita: "$6,700", pop: "18.2 Million", hdi: "0.765", cpi: "34/100", growth: "+1.8%", history: "Once part of the northern Inca Empire and later Great Colombia, Ecuador became an independent republic in 1830 and adopted the US Dollar as its official currency in 2000." },
+            "EG": { name: "Egypt", gdp: "$395 Billion", gdpCapita: "$3,500", pop: "114.5 Million", hdi: "0.731", cpi: "35/100", growth: "+4.0%", history: "Home to one of the world's earliest and most foundational river valley civilizations, modern Egypt gained full independence from British influence in 1952." },
+            "SV": { name: "El Salvador", gdp: "$35.2 Billion", gdpCapita: "$5,500", pop: "6.4 Million", hdi: "0.674", cpi: "31/100", growth: "+2.3%", history: "Gaining independence from Spain in 1821, El Salvador weathered a 12-year civil war ending in 1992, later making history by adopting Bitcoin as legal tender in 2021." },
+            "GQ": { name: "Equatorial Guinea", gdp: "$12.1 Billion", gdpCapita: "$7,500", pop: "1.7 Million", hdi: "0.596", cpi: "17/100", growth: "-1.2%", history: "The only Spanish-speaking nation in Africa, Equatorial Guinea gained independence in 1968 and discovered immense offshore oil reserves in the mid-1990s." },
+            "ER": { name: "Eritrea", gdp: "$2.6 Billion", gdpCapita: "$700", pop: "3.8 Million", hdi: "0.493", cpi: "22/100", growth: "+2.9%", history: "An Italian colony that was later annexed by Ethiopia, Eritrea won independence in 1993 after a grueling 30-year liberation struggle." },
+            "EE": { name: "Estonia", gdp: "$41.8 Billion", gdpCapita: "$31,200", pop: "1.3 Million", hdi: "0.899", cpi: "76/100", growth: "+1.8%", history: "Regaining independence from the Soviet Union in 1991, Estonia pioneered a globally unique digital society, inventing technologies like Skype and e-Residency." },
+            "SZ": { name: "Eswatini", gdp: "$4.9 Billion", gdpCapita: "$4,100", pop: "1.2 Million", hdi: "0.610", cpi: "30/100", growth: "+3.0%", history: "A British protectorate until 1968, the nation was officially renamed from Swaziland to Eswatini in 2018, representing one of the last absolute monarchies in Africa." },
+            "ET": { name: "Ethiopia", gdp: "$165 Billion", gdpCapita: "$1,300", pop: "129.7 Million", hdi: "0.492", cpi: "37/100", growth: "+6.2%", history: "One of the world's oldest sovereign nations, Ethiopia successfully defeated Italian invasion in 1896, standing as a historical symbol of African independence." },
+            "FJ": { name: "Fiji", gdp: "$5.5 Billion", gdpCapita: "$5,900", pop: "940,000", hdi: "0.729", cpi: "52/100", growth: "+3.0%", history: "Settled by Austronesian navigators, Fiji became a British crown colony in 1874 and gained independence in 1970, developing into a central South Pacific diplomatic hub." },
+            "FI": { name: "Finland", gdp: "$305 Billion", gdpCapita: "$54,800", pop: "5.6 Million", hdi: "0.942", cpi: "87/100", growth: "+1.0%", history: "Ruled by Sweden and later Russia, Finland gained independence in 1917, established an advanced technology economy, and joined NATO in 2023." },
+            "FR": { name: "France", gdp: "$3.05 Trillion", gdpCapita: "$46,200", pop: "66.5 Million", hdi: "0.910", cpi: "71/100", growth: "+1.1%", history: "Tracing its origins to the Frankish Empire, France's 1789 Revolution fundamentally reshaped global politics, paving the way for its status as a core European power." },
+            "GA": { name: "Gabon", gdp: "$21.4 Billion", gdpCapita: "$8,800", pop: "2.5 Million", hdi: "0.706", cpi: "28/100", growth: "+2.8%", history: "Gaining independence from France in 1960, Gabon leveraged its substantial oil deposits and extensive rainforest canopy to build a unique economic portfolio." },
+            "GM": { name: "Gambia", gdp: "$2.4 Billion", gdpCapita: "$900", pop: "2.8 Million", hdi: "0.495", cpi: "37/100", growth: "+5.3%", history: "A central outpost for the British transatlantic slave trade along the Gambia River, the country secured independence in 1965 as an independent republic." },
+            "GE": { name: "Georgia", gdp: "$32.5 Billion", gdpCapita: "$8,700", pop: "3.7 Million", hdi: "0.809", cpi: "53/100", growth: "+5.0%", history: "An ancient wine-making crossroads in the Caucasus, Georgia emerged from Soviet rule in 1991 and is actively seeking alignment with European institutions." },
+            "DE": { name: "Germany", gdp: "$4.72 Trillion", gdpCapita: "$55,900", pop: "84.6 Million", hdi: "0.950", cpi: "78/100", growth: "+1.2%", history: "Unified in 1871 under Prussian leadership, Germany overcame division during the Cold War to reunify in 1990, serving as the largest industrial economy in Europe." },
+            "GH": { name: "Ghana", gdp: "$76.5 Billion", gdpCapita: "$2,250", pop: "34.4 Million", hdi: "0.602", cpi: "43/100", growth: "+4.3%", history: "The seat of the ancient Ashanti Empire, Ghana made history in 1957 by becoming the first sub-Saharan African nation to gain independence from colonial rule." },
+            "GR": { name: "Greece", gdp: "$242 Billion", gdpCapita: "$23,200", pop: "10.4 Million", hdi: "0.893", cpi: "49/100", growth: "+2.1%", history: "Widely celebrated as the cradle of Western civilization, modern Greece secured independence from the Ottoman Empire in 1830 after a multi-year war." },
+            "GD": { name: "Grenada", gdp: "$1.3 Billion", gdpCapita: "$11,200", pop: "118,000", hdi: "0.793", cpi: "53/100", growth: "+3.8%", history: "Known globally as the 'Spice Isle', Grenada gained independence from the UK in 1974 and underwent a significant US-led military intervention in 1983." },
+            "GT": { name: "Guatemala", gdp: "$106 Billion", gdpCapita: "$5,800", pop: "18.3 Million", hdi: "0.630", cpi: "23/100", growth: "+3.5%", history: "The historical heartland of the Maya civilization, Guatemala declared independence from Spain in 1821 and survived a 36-year civil war ending in 1996." },
+            "GN": { name: "Guinea", gdp: "$24.2 Billion", gdpCapita: "$1,650", pop: "14.7 Million", hdi: "0.471", cpi: "26/100", growth: "+5.2%", history: "Part of the historical Mali Empire, Guinea broke with France in 1958 under Sekou Toure, choosing immediate independence over integration into the French Community." },
+            "GW": { name: "Guinea-Bissau", gdp: "$2.1 Billion", gdpCapita: "$1,000", pop: "2.2 Million", hdi: "0.483", cpi: "22/100", growth: "+4.5%", history: "A Portuguese colony for centuries, Guinea-Bissau fought a protracted guerrilla war of independence led by Amilcar Cabral, achieving recognition in 1974." },
+            "GY": { name: "Guyana", gdp: "$22.1 Billion", gdpCapita: "$27,000", pop: "815,000", hdi: "0.742", cpi: "40/100", growth: "+22.0%", history: "An administrative colony of the Dutch and later British, Guyana gained independence in 1966 and is currently undergoing unprecedented growth due to massive offshore oil finds." },
+            "HT": { name: "Haiti", gdp: "$25.4 Billion", gdpCapita: "$2,100", pop: "11.9 Million", hdi: "0.552", cpi: "17/100", growth: "-1.0%", history: "Haiti made global history in 1804 by launching the world's first successful slave revolt, establishing the first independent Black republic in the Americas." },
+            "HN": { name: "Honduras", gdp: "$34.2 Billion", gdpCapita: "$3,200", pop: "10.6 Million", hdi: "0.624", cpi: "23/100", growth: "+3.4%", history: "Home to the ancient Maya city of Copan, Honduras gained independence from Spain in 1821 and is currently expanding its manufacturing and agricultural bases." },
+            "HU": { name: "Hungary", gdp: "$225 Billion", gdpCapita: "$23,400", pop: "9.6 Million", hdi: "0.851", cpi: "42/100", growth: "+2.2%", history: "Tracing its origins to the arrival of the Magyars in 895, Hungary formed a major dual monarchy with Austria before establishing its current republican borders post-WWI." },
+            "IS": { name: "Iceland", gdp: "$32.4 Billion", gdpCapita: "$83,000", pop: "395,000", hdi: "0.957", cpi: "74/100", growth: "+2.4%", history: "Settled by Norse explorers in the 9th century, Iceland boasts the world's oldest functioning parliament (the Althing) and gained full independence from Denmark in 1944." },
+            "IN": { name: "India", gdp: "$4.12 Trillion", gdpCapita: "$2,850", pop: "1.44 Billion", hdi: "0.644", cpi: "39/100", growth: "+6.8%", history: "Home to the ancient Indus Valley Civilization, India won independence from British rule in 1947 through a historic non-violent resistance movement led by Mahatma Gandhi." },
+            "ID": { name: "Indonesia", gdp: "$1.47 Trillion", gdpCapita: "$5,200", pop: "281.6 Million", hdi: "0.713", cpi: "34/100", growth: "+5.1%", history: "An archipelago of historic maritime empires, Indonesia declared independence from Dutch colonial control in 1945, forming the world's fourth largest nation." },
+            "IR": { name: "Iran", gdp: "$425 Billion", gdpCapita: "$4,800", pop: "89.5 Million", hdi: "0.780", cpi: "24/100", growth: "+2.5%", history: "The direct heir to the ancient Persian Empire, Iran transitioned into its current system following the defining Islamic Revolution of 1979." },
+            "IQ": { name: "Iraq", gdp: "$265 Billion", gdpCapita: "$5,800", pop: "46.2 Million", hdi: "0.673", cpi: "23/100", growth: "+3.0%", history: "The historical cradle of Mesopotamian civilization, Iraq became an independent kingdom in 1932 before transitioning to a republic in 1958." },
+            "IE": { name: "Ireland", gdp: "$545 Billion", gdpCapita: "$106,000", pop: "5.3 Million", hdi: "0.945", cpi: "77/100", growth: "+2.5%", history: "Following a war of independence against British rule, Ireland established its Free State in 1922 and transformed into a leading European technology and finance center." },
+            "IL": { name: "Israel", gdp: "$530 Billion", gdpCapita: "$54,200", pop: "9.9 Million", hdi: "0.919", cpi: "62/100", growth: "+1.9%", history: "Established in 1948 following a UN partition plan, Israel built an advanced, high-tech economy in the Middle East amidst deep, ongoing regional dynamics." },
+            "IT": { name: "Italy", gdp: "$2.32 Trillion", gdpCapita: "$39,500", pop: "58.7 Million", hdi: "0.895", cpi: "56/100", growth: "+0.7%", history: "The historical heart of the Roman Empire and the birthplace of the Renaissance, Italy achieved modern national unification in 1861." },
+            "JM": { name: "Jamaica", gdp: "$19.5 Billion", gdpCapita: "$6,900", pop: "2.8 Million", hdi: "0.709", cpi: "44/100", growth: "+1.8%", history: "A key center for Spain and later Great Britain in the Caribbean, Jamaica achieved independence in 1962, leaving a permanent mark on global music and culture." },
+            "JP": { name: "Japan", gdp: "$4.35 Trillion", gdpCapita: "$35,100", pop: "123.8 Million", hdi: "0.920", cpi: "73/100", growth: "+0.9%", history: "An island nation with deep imperial traditions, Japan modernized rapidly during the Meiji Restoration and grew into a premier global industrial and technological giant." },
+            "JO": { name: "Jordan", gdp: "$52.4 Billion", gdpCapita: "$4,600", pop: "11.4 Million", hdi: "0.736", cpi: "46/100", growth: "+2.6%", history: "Part of the historic Ottoman Empire, Jordan became an independent kingdom in 1946 and serves as a vital anchor of diplomatic stability in the Middle East." },
+            "KZ": { name: "Kazakhstan", gdp: "$275 Billion", gdpCapita: "$13,800", pop: "20.1 Million", hdi: "0.802", cpi: "39/100", growth: "+4.2%", history: "The traditional homeland of nomadic Turkic groups, Kazakhstan was the last Soviet republic to declare independence in 1991, developing extensive energy resources." },
+            "KE": { name: "Kenya", gdp: "$116 Billion", gdpCapita: "$2,100", pop: "56.2 Million", hdi: "0.596", cpi: "31/100", growth: "+5.2%", history: "A historic hub for Indian Ocean trade, Kenya threw off British colonial rule in 1963 following the Mau Mau uprising, becoming East Africa's economic engine." },
+            "KI": { name: "Kiribati", gdp: "$290 Million", gdpCapita: "$2,200", pop: "135,000", hdi: "0.623", cpi: "33/100", growth: "+2.5%", history: "Formerly the Gilbert Islands under British administration, Kiribati gained independence in 1979 and stands as a leading voice on global climate action." },
+            "KP": { name: "North Korea", gdp: "$16.5 Billion", gdpCapita: "$640", pop: "26.2 Million", hdi: "0.465", cpi: "17/100", growth: "+0.1%", history: "Established in 1948 following the post-WWII division of the Korean peninsula, North Korea operates a highly centralized, reclusive state system." },
+            "KR": { name: "South Korea", gdp: "$1.78 Trillion", gdpCapita: "$34,500", pop: "51.7 Million", hdi: "0.929", cpi: "63/100", growth: "+2.2%", history: "Rising from the devastation of the Korean War, South Korea engineered the 'Miracle on the Han River,' becoming an international high-tech and cultural titan." },
+            "KW": { name: "Kuwait", gdp: "$165 Billion", gdpCapita: "$38,200", pop: "4.3 Million", hdi: "0.847", cpi: "46/100", growth: "+2.8%", history: "A historic maritime trading port, Kuwait gained independence from Britain in 1961, successfully recovered from the 1990 Gulf War, and manages a major sovereign wealth fund." },
+            "KG": { name: "Kyrgyzstan", gdp: "$14.2 Billion", gdpCapita: "$2,000", pop: "7.1 Million", hdi: "0.697", cpi: "26/100", growth: "+4.5%", history: "A mountainous nation along the ancient Silk Road, Kyrgyzstan gained independence from the Soviet Union in 1991 and has navigated multiple democratic transitions." },
+            "LA": { name: "Laos", gdp: "$15.8 Billion", gdpCapita: "$2,100", pop: "7.7 Million", hdi: "0.607", cpi: "28/100", growth: "+4.0%", history: "Succeeding the ancient kingdom of Lan Xang, Laos gained independence from France in 1953 and established its current republic in 1975." },
+            "LV": { name: "Latvia", gdp: "$44.5 Billion", gdpCapita: "$23,800", pop: "1.9 Million", hdi: "0.863", cpi: "60/100", growth: "+2.0%", history: "Inhabited by Baltic tribes and ruled by various European empires, Latvia gained independence in 1918, survived Soviet annexation, and restored sovereignty in 1991." },
+            "LB": { name: "Lebanon", gdp: "$21.5 Billion", gdpCapita: "$4,100", pop: "5.3 Million", hdi: "0.703", cpi: "24/100", growth: "-0.5%", history: "The historical heart of Phoenician maritime trade, Lebanon achieved independence from a French mandate in 1943 and is a unique cultural mosaic." },
+            "LS": { name: "Lesotho", gdp: "$2.6 Billion", gdpCapita: "$1,150", pop: "2.3 Million", hdi: "0.521", cpi: "41/100", growth: "+2.2%", history: "Originally known as Basutoland, this mountainous enclaved nation successfully resisted regional conquest and gained independence from Great Britain in 1966." },
+            "LR": { name: "Liberia", gdp: "$4.4 Billion", gdpCapita: "$800", pop: "5.5 Million", hdi: "0.487", cpi: "25/100", growth: "+5.0%", history: "Established in 1822 by the American Colonization Society for freed slaves, Liberia declared independence in 1847, standing as Africa's oldest modern republic." },
+            "LY": { name: "Libya", gdp: "$48.2 Billion", gdpCapita: "$7,100", pop: "6.9 Million", hdi: "0.746", cpi: "18/100", growth: "+4.8%", history: "An ancient crossroads of Mediterranean civilizations, Libya gained independence as a kingdom in 1951 and underwent a major political transition in 2011." },
+            "LI": { name: "Liechtenstein", gdp: "$7.3 Billion", gdpCapita: "$185,000", pop: "40,000", hdi: "0.935", cpi: "82/100", growth: "+1.6%", history: "Established as an independent principality within the Holy Roman Empire in 1719, Liechtenstein maintained close partnerships with Switzerland to build a premium financial economy." },
+            "LT": { name: "Lithuania", gdp: "$79.5 Billion", gdpCapita: "$28,100", pop: "2.8 Million", hdi: "0.875", cpi: "61/100", growth: "+2.2%", history: "Once the largest state in Europe during the Middle Ages, Lithuania made history in 1990 by becoming the first republic to declare independence from the Soviet Union." },
+            "LU": { name: "Luxembourg", gdp: "$89.2 Billion", gdpCapita: "$134,000", pop: "665,000", hdi: "0.930", cpi: "78/100", growth: "+1.5%", history: "A historic fortress state founded in 963, Luxembourg became a founding member of the European Union and grew into a premier international financial powerhouse." },
+            "MG": { name: "Madagascar", gdp: "$16.4 Billion", gdpCapita: "$530", pop: "31.2 Million", hdi: "0.487", cpi: "25/100", growth: "+4.6%", history: "Developing a unique ecological ecosystem due to millions of years of isolation, the Merina Kingdom unified the island before French colonization and its 1960 independence." },
+            "MW": { name: "Malawi", gdp: "$14.2 Billion", gdpCapita: "$640", pop: "21.5 Million", hdi: "0.508", cpi: "26/100", growth: "+4.1%", history: "Formerly the British protectorate of Nyasaland, Malawi achieved independence in 1964 and has maintained a peaceful domestic political history." },
+            "MY": { name: "Malaysia", gdp: "$445 Billion", gdpCapita: "$13,200", pop: "34.7 Million", hdi: "0.803", cpi: "50/100", growth: "+4.5%", history: "A historic center for global spice routes, the Federation of Malaya achieved independence from Great Britain in 1957, later forming modern Malaysia in 1963." },
+            "MV": { name: "Maldives", gdp: "$6.9 Billion", gdpCapita: "$12,800", pop: "525,000", hdi: "0.747", cpi: "39/100", growth: "+5.2%", history: "A historic maritime sultanate influenced by Arab and South Asian traders, the Maldives gained independence from Britain in 1965, turning into a world-class tourism hub." },
+            "ML": { name: "Mali", gdp: "$21.8 Billion", gdpCapita: "$910", pop: "24.1 Million", hdi: "0.410", cpi: "28/100", growth: "+4.0%", history: "The historic center of the wealthy Mali Empire and Timbuktu trade networks, the country gained independence from France in 1960." },
+            "MT": { name: "Malta", gdp: "$21.4 Billion", gdpCapita: "$40,100", pop: "540,000", hdi: "0.918", cpi: "51/100", growth: "+4.1%", history: "A strategic Mediterranean archipelago ruled by Phoenicians, Romans, and the Knights of St. John, Malta gained independence from Britain in 1964." },
+            "MH": { name: "Marshall Islands", gdp: "$280 Million", gdpCapita: "$6,800", pop: "42,000", hdi: "0.639", cpi: "23/100", growth: "+2.0%", history: "Explored by Spanish and German navigators, the islands were a US-administered UN Trust Territory until achieving independence in 1986 under a Compact of Free Association." },
+            "MR": { name: "Mauritania", gdp: "$10.5 Billion", gdpCapita: "$2,150", pop: "4.9 Million", hdi: "0.556", cpi: "30/100", growth: "+4.9%", history: "A bridge between North and Sub-Saharan Africa, Mauritania gained independence from France in 1960 and is expanding its mining and energy sectors." },
+            "MU": { name: "Mauritius", gdp: "$15.4 Billion", gdpCapita: "$12,100", pop: "1.3 Million", hdi: "0.802", cpi: "50/100", growth: "+4.4%", history: "Uninhabited until Dutch settlement, Mauritius was held by France and Britain before gaining independence in 1968, building a diversified, high-income economy." },
+            "MX": { name: "Mexico", gdp: "$1.82 Trillion", gdpCapita: "$13,900", pop: "129.5 Million", hdi: "0.758", cpi: "31/100", growth: "+2.1%", history: "The cradle of advanced Mesoamerican civilizations like the Aztecs and Mayas, Mexico achieved independence from Spain in 1821 after a decade-long war." },
+            "FM": { name: "Micronesia", gdp: "$460 Million", gdpCapita: "$4,100", pop: "115,000", hdi: "0.628", cpi: "23/100", growth: "+2.2%", history: "Part of the Caroline Islands, the Federated States of Micronesia transitioned from a US-administered trust to full independence in 1986." },
+            "MD": { name: "Moldova", gdp: "$17.2 Billion", gdpCapita: "$6,800", pop: "2.5 Million", hdi: "0.767", cpi: "42/100", growth: "+3.5%", history: "Part of the historic Principality of Moldavia and later the Soviet Union, Moldova declared independence in 1991 and is actively modernizing its agricultural and wine economies." },
+            "MC": { name: "Monaco", gdp: "$9.2 Billion", gdpCapita: "$240,000", pop: "39,000", hdi: "0.956", cpi: "77/100", growth: "+1.2%", history: "Ruled continuously by the House of Grimaldi since 1297, this Mediterranean principality developed an iconic, high-end economy centered on premium tourism and finance." },
+            "MN": { name: "Mongolia", gdp: "$22.4 Billion", gdpCapita: "$6,400", pop: "3.5 Million", hdi: "0.741", cpi: "33/100", growth: "+5.5%", history: "The home base of Genghis Khan's world-spanning 13th-century empire, Mongolia transitioned to a peaceful, multi-party democracy in 1990." },
+            "ME": { name: "Montenegro", gdp: "$7.5 Billion", gdpCapita: "$12,100", pop: "620,000", hdi: "0.832", cpi: "46/100", growth: "+3.2%", history: "A historic Balkan principality that successfully maintained autonomy from the Ottomans, Montenegro voted to peacefully separate from Serbia in 2006." },
+            "MA": { name: "Morocco", gdp: "$152 Billion", gdpCapita: "$4,100", pop: "38.2 Million", hdi: "0.683", cpi: "38/100", growth: "+3.1%", history: "Boasting a rich dynastic history that resisted full Ottoman absorption, Morocco ended French and Spanish protectorate statuses to reclaim complete independence in 1956." },
+            "MZ": { name: "Mozambique", gdp: "$22.4 Billion", gdpCapita: "$650", pop: "34.8 Million", hdi: "0.461", cpi: "25/100", growth: "+5.0%", history: "A central hub for Arab-Swahili trading networks, Mozambique gained independence from Portugal in 1975 and is currently developing major offshore natural gas fields." },
+            "MM": { name: "Myanmar", gdp: "$68.5 Billion", gdpCapita: "$1,250", pop: "54.9 Million", hdi: "0.585", cpi: "20/100", growth: "+1.2%", history: "Home to the historic Pagan Kingdom, Burma gained independence from British rule in 1948 and continues to navigate complex internal political and ethnic transitions." },
+            "NA": { name: "Namibia", gdp: "$13.5 Billion", gdpCapita: "$5,100", pop: "2.6 Million", hdi: "0.615", cpi: "49/100", growth: "+3.5%", history: "Administered sequentially by Germany and South Africa, Namibia secured its independence in 1990 following a multi-decade liberation struggle." },
+            "NR": { name: "Nauru", gdp: "$150 Million", gdpCapita: "$12,000", pop: "12,000", hdi: "0.683", cpi: "23/100", growth: "+1.8%", history: "Originally settled by Micronesian and Polynesian navigators, Nauru gained independence in 1968 and is one of the smallest independent republics in the world." },
+            "NP": { name: "Nepal", gdp: "$42.5 Billion", gdpCapita: "$1,400", pop: "31.2 Million", hdi: "0.601", cpi: "35/100", growth: "+4.2%", history: "A sovereign Himalayan nation that maintained independence throughout the colonial era, Nepal transitioned from a centuries-old monarchy to a federal republic in 2008." },
+            "NL": { name: "Netherlands", gdp: "$1.15 Trillion", gdpCapita: "$64,200", pop: "17.9 Million", hdi: "0.941", cpi: "82/100", growth: "+1.3%", history: "Establishing a global maritime trading empire in the 17th century, the Netherlands evolved into an advanced, socially progressive European economic powerhouse." },
+            "NZ": { name: "New Zealand", gdp: "$255 Billion", gdpCapita: "$49,100", pop: "5.3 Million", hdi: "0.937", cpi: "84/100", growth: "+1.5%", history: "Settled by Maori voyagers around 1300, New Zealand signed the Treaty of Waitangi with the British Crown in 1840, developing into an advanced, inclusive democracy." },
+            "NI": { name: "Nicaragua", gdp: "$18.2 Billion", gdpCapita: "$2,600", pop: "7.1 Million", hdi: "0.667", cpi: "26/100", growth: "+3.5%", history: "Declaring independence from Spain in 1821, Nicaragua's 20th-century history was defined by the Sandinista revolution and subsequent institutional developments." },
+            "NE": { name: "Niger", gdp: "$17.4 Billion", gdpCapita: "$630", pop: "27.2 Million", hdi: "0.394", cpi: "32/100", growth: "+6.5%", history: "A historical center for the Hausa and Songhai empires, Niger achieved independence from France in 1960 and possesses significant uranium deposits." },
+            "NG": { name: "Nigeria", gdp: "$395 Billion", gdpCapita: "$1,750", pop: "229.2 Million", hdi: "0.548", cpi: "25/100", growth: "+3.1%", history: "The seat of the historic Benin and Oyo kingdoms, Nigeria gained independence from Britain in 1960, growing into Africa's most populous nation and cultural superpower." },
+            "MK": { name: "North Macedonia", gdp: "$15.4 Billion", gdpCapita: "$7,500", pop: "2.1 Million", hdi: "0.770", cpi: "40/100", growth: "+2.5%", history: "Proclaiming independence from Yugoslavia in 1991 without conflict, the nation settled a long-standing naming dispute with Greece in 2019 to unlock Euro-Atlantic pathways." },
+            "NO": { name: "Norway", gdp: "$545 Billion", gdpCapita: "$98,000", pop: "5.6 Million", hdi: "0.961", cpi: "84/100", growth: "+1.4%", history: "Dissolving its union with Sweden in 1905, Norway prudently managed its mid-20th-century offshore oil discoveries to build the world's largest sovereign wealth fund." },
+            "OM": { name: "Oman", gdp: "$112 Billion", gdpCapita: "$22,500", pop: "4.7 Million", hdi: "0.816", cpi: "43/100", growth: "+2.7%", history: "An independent maritime empire that rivaled European powers in the 19th century, Oman modernized rapidly under Sultan Qaboos while preserving its unique heritage." },
+            "PK": { name: "Pakistan", gdp: "$340 Billion", gdpCapita: "$1,450", pop: "245.2 Million", hdi: "0.544", cpi: "29/100", growth: "+2.4%", history: "Formed in 1947 through the partition of British India as a dedicated homeland for South Asian Muslims, Pakistan is a culturally diverse nuclear-armed republic." },
+            "PW": { name: "Palau", gdp: "$300 Million", gdpCapita: "$16,500", pop: "18,000", hdi: "0.767", cpi: "48/100", growth: "+2.1%", history: "Settled for millennia, Palau was held by Spain, Germany, and Japan before transitioning from a US-administered UN trust to full independence in 1994." },
+            "PA": { name: "Panama", gdp: "$87.5 Billion", gdpCapita: "$19,500", pop: "4.5 Million", hdi: "0.820", cpi: "35/100", growth: "+4.0%", history: "Separating from Colombia in 1903 with US backing to construct the Panama Canal, the nation assumed full control of the vital waterway in 1999." },
+            "PG": { name: "Papua New Guinea", gdp: "$32.4 Billion", gdpCapita: "$3,100", pop: "10.5 Million", hdi: "0.558", cpi: "29/100", growth: "+4.5%", history: "Home to hundreds of distinct indigenous societies, the nation was administered by Australia before gaining full independence in 1975." },
+            "PY": { name: "Paraguay", gdp: "$45.2 Billion", gdpCapita: "$6,500", pop: "6.9 Million", hdi: "0.717", cpi: "28/100", growth: "+3.8%", history: "Declaring independence from Spain in 1811, Paraguay preserved its indigenous Guaraní culture alongside Spanish as a cornerstone of its modern identity." },
+            "PE": { name: "Peru", gdp: "$270 Billion", gdpCapita: "$7,900", pop: "34.4 Million", hdi: "0.762", cpi: "33/100", growth: "+2.7%", history: "The historic heartland of the expansive Inca Empire, Peru became Spain's primary South American power center until declaring independence in 1821." },
+            "PH": { name: "Philippines", gdp: "$445 Billion", gdpCapita: "$3,850", pop: "119.1 Million", hdi: "0.699", cpi: "34/100", growth: "+5.9%", history: "Ruled by Spain for over 300 years and later by the United States, the Philippines achieved full sovereignty in 1946, becoming a dynamic archipelagic economy." },
+            "PL": { name: "Poland", gdp: "$860 Billion", gdpCapita: "$23,000", pop: "37.6 Million", hdi: "0.875", cpi: "54/100", growth: "+3.0%", history: "A major European power in the Middle Ages, Poland was partitioned out of existence by neighbors in the late 18th century, triumphantly restoring sovereignty in 1918." },
+            "PT": { name: "Portugal", gdp: "$292 Billion", gdpCapita: "$28,100", pop: "10.4 Million", hdi: "0.866", cpi: "61/100", growth: "+1.5%", history: "A pioneering maritime nation that kicked off the global Age of Discovery in the 15th century, Portugal transitioned to a stable democracy in 1974." },
+            "QA": { name: "Qatar", gdp: "$245 Billion", gdpCapita: "$85,000", pop: "2.7 Million", hdi: "0.855", cpi: "53/100", growth: "+2.2%", history: "A British protectorate focused on pearling until 1971, Qatar leveraged its massive North Field natural gas reserves to build a leading global investment economy." },
+            "RO": { name: "Romania", gdp: "$365 Billion", gdpCapita: "$19,200", pop: "19.0 Million", hdi: "0.821", cpi: "46/100", growth: "+2.8%", history: "Formed by the unification of Danubian principalities in 1859, Romania overthrew its communist regime in 1989 and integrated into NATO and the EU." },
+            "RU": { name: "Russia", gdp: "$2.05 Trillion", gdpCapita: "$14,100", pop: "144.0 Million", hdi: "0.822", cpi: "26/100", growth: "+1.1%", history: "Expanding from the Grand Duchy of Moscow into a massive empire and leading the Soviet Union, the Russian Federation emerged as an independent state in 1991." },
+            "RW": { name: "Rwanda", gdp: "$15.2 Billion", gdpCapita: "$1,050", pop: "14.3 Million", hdi: "0.534", cpi: "53/100", growth: "+6.9%", history: "A historic independent kingdom colonized by Germany and Belgium, Rwanda made an extraordinary economic and social recovery following the tragic 1994 genocide." },
+            "KN": { name: "Saint Kitts and Nevis", gdp: "$1.1 Billion", gdpCapita: "$22,000", pop: "48,000", hdi: "0.777", cpi: "41/100", growth: "+3.2%", history: "The oldest colonized territory in the Caribbean by both the British and French, these islands achieved full independence in 1983." },
+            "LC": { name: "Saint Lucia", gdp: "$2.4 Billion", gdpCapita: "$13,100", pop: "180,000", hdi: "0.715", cpi: "55/100", growth: "+4.0%", history: "Changing hands between the French and British 14 times, Saint Lucia secured independence from the United Kingdom in 1979." },
+            "VC": { name: "Saint Vincent and the Grenadines", gdp: "$1.0 Billion", gdpCapita: "$9,200", pop: "104,000", hdi: "0.751", cpi: "43/100", growth: "+4.5%", history: "Fiercely defended by the Carib people against early colonization, the island chain became a British colony and transitioned to independence in 1979." },
+            "WS": { name: "Samoa", gdp: "$950 Million", gdpCapita: "$4,500", pop: "225,000", hdi: "0.707", cpi: "44/100", growth: "+3.0%", history: "Governed by Germany and later New Zealand, Samoa became the first Polynesian nation to re-establish independence in 1962." },
+            "SM": { name: "San Marino", gdp: "$1.9 Billion", gdpCapita: "$56,000", pop: "34,000", hdi: "0.853", cpi: "59/100", growth: "+1.2%", history: "Founded in 301 AD by a Christian stonemason, San Marino holds a proud legacy as the world's oldest surviving sovereign republic." },
+            "ST": { name: "São Tomé and Príncipe", gdp: "$630 Million", gdpCapita: "$2,600", pop: "235,000", hdi: "0.592", cpi: "45/100", growth: "+3.8%", history: "Uninhabited until discovered by Portuguese sailors in 1470, the islands developed a major plantation economy before achieving independence in 1975." },
+            "SA": { name: "Saudi Arabia", gdp: "$1.12 Trillion", gdpCapita: "$32,500", pop: "33.5 Million", hdi: "0.875", cpi: "52/100", growth: "+2.5%", history: "Unified in 1932 by Ibn Saud, Saudi Arabia discovered oil in 1938, transforming the kingdom into a global energy leader and guardian of Islam's holiest sites." },
+            "SN": { name: "Senegal", gdp: "$31.5 Billion", gdpCapita: "$1,750", pop: "18.2 Million", hdi: "0.511", cpi: "43/100", growth: "+5.8%", history: "A cornerstone of historical West African empires, Senegal gained independence from France in 1960 and stands as a model of democratic stability." },
+            "RS": { name: "Serbia", gdp: "$75.2 Billion", gdpCapita: "$11,500", pop: "6.6 Million", hdi: "0.802", cpi: "36/100", growth: "+3.5%", history: "A powerful medieval kingdom that endured Ottoman rule, Serbia served as the core of Yugoslavia before transitioning to its current republican status in 2006." },
+            "SC": { name: "Seychelles", gdp: "$2.2 Billion", gdpCapita: "$21,800", pop: "100,000", hdi: "0.802", cpi: "70/100", growth: "+3.8%", history: "Uninhabited before French and British colonization, Seychelles won independence in 1976 and enjoys the highest GDP per capita in Africa." },
+            "SL": { name: "Sierra Leone", gdp: "$4.3 Billion", gdpCapita: "$500", pop: "8.9 Million", hdi: "0.477", cpi: "20/100", growth: "+4.5%", history: "Founded in 1787 by British abolitionists as a refuge for freed slaves, Sierra Leone gained independence in 1961 and successfully rebuilt post-civil war." },
+            "SG": { name: "Singapore", gdp: "$525 Billion", gdpCapita: "$88,500", pop: "5.9 Million", hdi: "0.939", cpi: "83/100", growth: "+2.4%", history: "Separating from Malaysia in 1965, Singapore engineered a legendary transformation from a colonial port into one of the world's most advanced logistics, tech, and financial capitals." },
+            "SK": { name: "Slovakia", gdp: "$132 Billion", gdpCapita: "$24,200", pop: "5.4 Million", hdi: "0.860", cpi: "54/100", growth: "+2.1%", history: "Part of the Kingdom of Hungary and later Czechoslovakia, Slovakia became an independent state in 1993 through the peaceful Velvet Divorce." },
+            "SI": { name: "Slovenia", gdp: "$68.5 Billion", gdpCapita: "$32,100", pop: "2.1 Million", hdi: "0.918", cpi: "56/100", growth: "+2.3%", history: "Historically ruled by the Habsburg Monarchy and part of Yugoslavia, Slovenia achieved independence in 1991 and integrated rapidly into European frameworks." },
+            "SB": { name: "Solomon Islands", gdp: "$1.6 Billion", gdpCapita: "$2,200", pop: "750,000", hdi: "0.562", cpi: "43/100", growth: "+2.5%", history: "Inhabited for thousands of years, the islands became a British protectorate in the 1890s, witnessed intense fighting in WWII, and won independence in 1978." },
+            "SO": { name: "Somalia", gdp: "$11.8 Billion", gdpCapita: "$650", pop: "18.3 Million", hdi: "0.380", cpi: "11/100", growth: "+3.7%", history: "A major commercial trading hub in the ancient world, modern Somalia unified British and Italian territories to form an independent republic in 1960." },
+            "ZA": { name: "South Africa", gdp: "$390 Billion", gdpCapita: "$6,300", pop: "61 Million", hdi: "0.717", cpi: "41/100", growth: "+1.5%", history: "Colonialized by the Dutch and British, South Africa made a historic transition to multiracial democracy in 1994, ending the institutionalized system of Apartheid." },
+            "SS": { name: "South Sudan", gdp: "$5.2 Billion", gdpCapita: "$450", pop: "11.5 Million", hdi: "0.385", cpi: "13/100", growth: "-2.0%", history: "Following decades of civil conflict, South Sudan became the world's newest internationally recognized country after a peaceful independence referendum in 2011." },
+            "ES": { name: "Spain", gdp: "$1.62 Trillion", gdpCapita: "$33,800", pop: "48.3 Million", hdi: "0.905", cpi: "60/100", growth: "+1.8%", history: "Unified under the Catholic Monarchs in 1492, Spain built a massive global empire, transitioning smoothly into a highly advanced parliamentary democracy in 1978." },
+            "LK": { name: "Sri Lanka", gdp: "$84.5 Billion", gdpCapita: "$3,800", pop: "21.9 Million", hdi: "0.782", cpi: "34/100", growth: "+2.2%", history: "A vital Indian Ocean trade node known as Ceylon under British rule, Sri Lanka gained independence in 1948 and is modernizing its service economy." },
+            "SD": { name: "Sudan", gdp: "$25.4 Billion", gdpCapita: "$520", pop: "49.0 Million", hdi: "0.516", cpi: "20/100", growth: "-4.5%", history: "Home to the ancient Kingdom of Kush, Sudan achieved independence from joint British-Egyptian administration in 1956 and continues to navigate complex political transitions." },
+            "SR": { name: "Suriname", gdp: "$4.2 Billion", gdpCapita: "$6,800", pop: "625,000", hdi: "0.690", cpi: "40/100", growth: "+2.5%", history: "A major Dutch plantation colony based on agriculture, Suriname achieved complete independence from the Netherlands in 1975." },
+            "SE": { name: "Sweden", gdp: "$595 Billion", gdpCapita: "$56,500", pop: "10.5 Million", hdi: "0.947", cpi: "82/100", growth: "+1.2%", history: "Emerging from the Kalmar Union as a dominant Baltic military power in the 17th century, Sweden pivoted to long-term neutrality and built a premium Nordic model." },
+            "CH": { name: "Switzerland", gdp: "$905 Billion", gdpCapita: "$102,000", pop: "8.9 Million", hdi: "0.962", cpi: "82/100", growth: "+1.3%", history: "Forming its core defensive confederation in 1291, Switzerland built an internationally renowned system of direct democracy, strict neutrality, and advanced asset banking." },
+            "SY": { name: "Syria", gdp: "$12.5 Billion", gdpCapita: "$550", pop: "23.5 Million", hdi: "0.557", cpi: "13/100", growth: "+0.5%", history: "Home to some of the world's oldest continuously inhabited cities, Syria achieved independence from a French mandate in 1946." },
+            "TJ": { name: "Tajikistan", gdp: "$12.4 Billion", gdpCapita: "$1,200", pop: "10.3 Million", hdi: "0.679", cpi: "20/100", growth: "+6.0%", history: "Influenced heavily by ancient Persian civilization, Tajikistan emerged from the dissolution of the Soviet Union to claim independence in 1991." },
+            "TZ": { name: "Tanzania", gdp: "$85.2 Billion", gdpCapita: "$1,250", pop: "67.4 Million", hdi: "0.532", cpi: "40/100", growth: "+5.5%", history: "Formed in 1964 by the unification of Tanganyika and the island sultanate of Zanzibar, Tanzania is East Africa's largest country by land area." },
+            "TH": { name: "Thailand", gdp: "$515 Billion", gdpCapita: "$7,200", pop: "71.8 Million", hdi: "0.803", cpi: "35/100", growth: "+2.8%", history: "Formerly known as the Kingdom of Siam, Thailand holds the unique distinction of being the only Southeast Asian nation to completely avoid Western colonization." },
+            "TL": { name: "Timor-Leste", gdp: "$2.1 Billion", gdpCapita: "$1,500", pop: "1.4 Million", hdi: "0.666", cpi: "43/100", growth: "+3.2%", history: "Colonized by Portugal and later integrated into Indonesia, Timor-Leste achieved internationally recognized independence in 2002 after a UN-sponsored referendum." },
+            "TG": { name: "Togo", gdp: "$9.2 Billion", gdpCapita: "$1,000", pop: "9.3 Million", hdi: "0.539", cpi: "31/100", growth: "+5.1%", history: "A historical part of the Slave Coast, Togo was administered by Germany and France before achieving full independence in 1960." },
+            "TO": { name: "Tonga", gdp: "$520 Million", gdpCapita: "$5,000", pop: "105,000", hdi: "0.739", cpi: "44/100", growth: "+2.4%", history: "A powerful maritime empire in the South Pacific, Tonga maintained its indigenous monarchical governance throughout the colonial era, joining the Commonwealth in 1970." },
+            "TT": { name: "Trinidad and Tobago", gdp: "$28.4 Billion", gdpCapita: "$18,400", pop: "1.5 Million", hdi: "0.810", cpi: "42/100", growth: "+2.0%", history: "Colonized by Spain and Britain, these dual islands achieved independence in 1962, leveraging oil and natural gas to become an industrial center in the Caribbean." },
+            "TN": { name: "Tunisia", gdp: "$52.4 Billion", gdpCapita: "$4,200", pop: "12.5 Million", hdi: "0.732", cpi: "40/100", growth: "+1.9%", history: "The historical core of the ancient Carthaginian Empire and Ottoman rule, Tunisia gained independence from France in 1956." },
+            "TR": { name: "Türkiye", gdp: "$1.15 Trillion", gdpCapita: "$13,200", pop: "86.0 Million", hdi: "0.838", cpi: "34/100", growth: "+3.0%", history: "Following the collapse of the multi-continental Ottoman Empire after WWI, Mustafa Kemal Ataturk founded the modern, secular Republic of Turkey in 1923." },
+            "TM": { name: "Turkmenistan", gdp: "$65.2 Billion", gdpCapita: "$10,100", pop: "6.5 Million", hdi: "0.745", cpi: "18/100", growth: "+5.2%", history: "A major hub along the Silk Road historical tracks, Turkmenistan gained independence from the USSR in 1991 and maintains an officially recognized policy of permanent neutrality." },
+            "TV": { name: "Tuvalu", gdp: "$65 Million", gdpCapita: "$5,800", pop: "11,000", hdi: "0.641", cpi: "41/100", growth: "+2.0%", history: "Formerly known as the Ellice Islands, this low-lying Pacific coral atoll chain separated from the Gilbert Islands to gain independence from Britain in 1978." },
+            "UG": { name: "Uganda", gdp: "$52.5 Billion", gdpCapita: "$1,050", pop: "49.2 Million", hdi: "0.550", cpi: "26/100", growth: "+6.0%", history: "The seat of the historic Buganda Kingdom alongside other traditional states, Uganda gained independence from British colonial administration in 1962." },
+            "UA": { name: "Ukraine", gdp: "$178 Billion", gdpCapita: "$4,800", pop: "37.5 Million", hdi: "0.734", cpi: "36/100", growth: "+3.2%", history: "The historical heartland of Kievan Rus', Ukraine declared independence from the Soviet Union in 1991 and continues to defend its sovereign state borders." },
+            "AE": { name: "United Arab Emirates", gdp: "$535 Billion", gdpCapita: "$52,500", pop: "9.5 Million", hdi: "0.911", cpi: "68/100", growth: "+3.5%", history: "Formerly known as the Trucial States, seven sovereign emirates federated in 1971 to establish the modern UAE, transforming into a global hub for finance and technology." },
+            "GB": { name: "United Kingdom", gdp: "$3.5 Trillion", gdpCapita: "$51,000", pop: "68 Million", hdi: "0.940", cpi: "71/100", growth: "+1.4%", history: "Pioneering the global Industrial Revolution and administering history's largest empire, the UK transitioned smoothly into a highly advanced, modern island democracy." },
+            "US": { name: "United States", gdp: "$28.7 Trillion", gdpCapita: "$85,300", pop: "345 Million", hdi: "0.927", cpi: "69/100", growth: "+2.1%", history: "Declaring independence from Great Britain in 1776, the United States developed the world's largest individual national economy and established global leadership across technology and industry." },
+            "UY": { name: "Uruguay", gdp: "$79.2 Billion", gdpCapita: "$22,100", pop: "3.4 Million", hdi: "0.830", cpi: "73/100", growth: "+3.2%", history: "Forming a strategic buffer between competing empires, Uruguay won independence in 1828 and built one of Latin America's most inclusive and stable democratic models." },
+            "UZ": { name: "Uzbekistan", gdp: "$105 Billion", gdpCapita: "$2,850", pop: "36.8 Million", hdi: "0.727", cpi: "33/100", growth: "+5.5%", history: "The imperial home of Timur's 14th-century dynasty and iconic Silk Road hubs like Samarkand, Uzbekistan declared independence from Soviet administration in 1991." },
+            "VU": { name: "Vanuatu", gdp: "$1.1 Billion", gdpCapita: "$3,300", pop: "335,000", hdi: "0.614", cpi: "48/100", growth: "+2.8%", history: "Jointly ruled by France and Great Britain as the New Hebrides, the archipelagic nation achieved independence in 1980 under the name Vanuatu." },
+            "VE": { name: "Venezuela", gdp: "$102 Billion", gdpCapita: "$3,600", pop: "29.0 Million", hdi: "0.691", cpi: "13/100", growth: "+4.0%", history: "One of the first Spanish colonies to declare independence in 1811, Venezuela contains the world's largest proven oil reserves and possesses a rich South American heritage." },
+            "VN": { name: "Vietnam", gdp: "$465 Billion", gdpCapita: "$4,600", pop: "99.5 Million", hdi: "0.726", cpi: "41/100", growth: "+6.0%", history: "Enduring decades of colonial occupation and a major conflict in the mid-20th century, Vietnam reunified in 1975 and transitioned into a fast-growing manufacturing hub." },
+            "YE": { name: "Yemen", gdp: "$19.5 Billion", gdpCapita: "$580", pop: "34.8 Million", hdi: "0.424", cpi: "16/100", growth: "+1.5%", history: "Home to the legendary ancient Kingdom of Sheba, modern Yemen was formed in 1990 by the unification of distinct northern and southern territories." },
+            "ZM": { name: "Zambia", gdp: "$29.5 Billion", gdpCapita: "$1,450", pop: "21.1 Million", hdi: "0.565", cpi: "37/100", growth: "+4.3%", history: "Formerly Northern Rhodesia under British mineral concessions, Zambia won independence in 1964 and remains a major global producer of copper commodities." },
+            "ZW": { name: "Zimbabwe", gdp: "$28.2 Billion", gdpCapita: "$1,700", pop: "16.8 Million", hdi: "0.550", cpi: "24/100", growth: "+3.5%", history: "The historic core of the Great Zimbabwe stone trading civilization, the nation transitioned to internationally recognized independence in 1980." }
         };
 
-        document.addEventListener("DOMContentLoaded", function() {
-            const map = new jsVectorMap({
-                selector: '#map',
-                map: 'world',
-                backgroundColor: 'transparent',
-                zoomOnScroll: true,
-                zoomButtons: true,
-                regionStyle: {
-                    initial: {
-                        fill: '#334155',
-                        stroke: '#1e293b',
-                        strokeWidth: 0.5,
-                        fillOpacity: 1
-                    },
-                    hover: {
-                        fill: '#38bdf8',
-                        fillOpacity: 0.9,
-                        cursor: 'pointer'
-                    }
+        // Initialize jsVectorMap engine
+        const mapInstance = new jsVectorMap({
+            selector: '#map',
+            map: 'world',
+            backgroundColor: '#0f172a',
+            zoomOnScroll: true,
+            zoomButtons: true,
+            
+            // Geographic Region Vector Styling
+            regionStyle: {
+                initial: {
+                    fill: '#334155',         /* Slate 700 default */
+                    fillOpacity: 1,
+                    stroke: '#0f172a',       /* Deep boundaries border lines */
+                    strokeWidth: 1.2,
+                    strokeOpacity: 1
                 },
-                onRegionTooltipShow(event, tooltip, code) {
-                    const data = countryMetrics[code] || {
-                        name: tooltip.text(),
-                        gdp: "N/A", gdpCapita: "N/A", pop: "N/A", hdi: "N/A", cpi: "N/A", growth: "N/A"
-                    };
+                hover: {
+                    fill: '#38bdf8',         /* Electric blue focus color on hover */
+                    cursor: 'pointer'
+                },
+                selected: {
+                    fill: '#0ea5e9'
+                }
+            },
 
-                    const isNegative = data.growth.startsWith('-');
-                    const growthColor = isNegative ? '#f87171' : (data.growth === 'N/A' ? 'var(--text-color)' : '#4ade80');
+            // Streamline tooltips to show country name clearly
+            onRegionTooltipShow: function(event, tooltip, code) {
+                const countryRecord = countryDataMatrix[code];
+                if (countryRecord) {
+                    tooltip.text(`Click to view ${countryRecord.name}`);
+                }
+            },
 
-                    const htmlLayout = `
-                        <div class="tooltip-title">${data.name}</div>
-                        <div class="tooltip-grid">
-                            <div class="tooltip-label">GDP:</div>
-                            <div class="tooltip-value">${data.gdp}</div>
-                            
-                            <div class="tooltip-label">GDP Per Capita:</div>
-                            <div class="tooltip-value">${data.gdpCapita}</div>
-                            
-                            <div class="tooltip-label">Population:</div>
-                            <div class="tooltip-value">${data.pop}</div>
-                            
-                            <div class="tooltip-label">HDI Score:</div>
-                            <div class="tooltip-value">${data.hdi}</div>
-                            
-                            <div class="tooltip-label">Corruption Score:</div>
-                            <div class="tooltip-value">${data.cpi}</div>
-                            
-                            <div class="tooltip-label">Expected Growth:</div>
-                            <div class="tooltip-value" style="color: ${growthColor}">${data.growth}</div>
+            // Core Click Listener Logic to drive the Sidebar updates
+            onRegionClick: function(event, code) {
+                const targetDataset = countryDataMatrix[code];
+                const sidebarContainer = document.getElementById('sidebar-content');
+
+                if (targetDataset) {
+                    // Update layout from placeholder to active content display
+                    sidebarContainer.className = "sidebar-padding";
+                    
+                    sidebarContainer.innerHTML = `
+                        <div class="country-title">
+                            <span>${targetDataset.name}</span>
+                        </div>
+                        
+                        <div class="section-label">Macroeconomic Data</div>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="label">Gross Domestic Product</div>
+                                <div class="value">${targetDataset.gdp}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="label">GDP Per Capita</div>
+                                <div class="value">${targetDataset.gdpCapita}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="label">Annual Growth</div>
+                                <div class="value" style="color: ${targetDataset.growth.includes('-') ? '#ef4444' : '#22c55e'}">
+                                    ${targetDataset.growth}
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="label">Total Population</div>
+                                <div class="value">${targetDataset.pop}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="label">Human Dev. Index (HDI)</div>
+                                <div class="value">${targetDataset.hdi}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="label">Corruption Index</div>
+                                <div class="value">${targetDataset.cpi}</div>
+                            </div>
+                        </div>
+
+                        <div class="section-label">Historical Insight</div>
+                        <div class="history-box">
+                            ${targetDataset.history}
                         </div>
                     `;
-                    tooltip.text(htmlLayout, true);
                 }
-            });
+            }
         });
     </script>
 </body>
